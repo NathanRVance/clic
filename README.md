@@ -1,2 +1,2 @@
-# clic
+# CLIC
 CLuster In the Cloud

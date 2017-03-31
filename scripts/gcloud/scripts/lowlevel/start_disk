@@ -1,0 +1,9 @@
+#!/bin/bash
+
+name=$1
+
+gcloud compute instances start $name
+
+# Remove the ip from knownhosts in case it collides with an existing one
+ip=`gcloud compute instances list "$name" | tail -1 | rev | awk '{ print $3 }' | rev`
+ssh-keygen -R $ip

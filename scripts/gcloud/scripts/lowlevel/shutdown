@@ -1,0 +1,4 @@
+#!/bin/bash
+
+name="$1"
+gcloud compute instances stop $name

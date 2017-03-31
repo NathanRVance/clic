@@ -1,0 +1,28 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SITC_ROOT=$DIR/../
+source $SITC_ROOT/install.conf
+
+name=$1
+number=$2
+disksize=$3
+memory="standard"
+numcpus=$4
+
+$DIR/gcloud/api start_snapshot $name$number $name $disksize $memory $numcpus
+
+fullname=`$DIR/gcloud/api get_fullname $name$number`
+
+echo "fullname: $fullname"
+
+# Set up the new server
+cd /home/$WEBMO_USER/public_html/cgi-bin/webmo/
+perl -e "require qw(servercontrol.cgi);
+add_server(\"$fullname\", \"$fullname\", \"$numcpus\", \"$WEBMO_USER\", \"/home/$WEBMO_USER\", \"/tmp\", \"ssh\");"
+
+serverDir=`grep -o "$fullname,[0-9]\+" /home/$WEBMO_USER/public_html/cgi-bin/webmo/interfaces/globals.int | cut -d ',' -f2`
+serverDir="/home/$WEBMO_USER/public_html/cgi-bin/webmo/servers/server_$serverDir/"
+
+# Enable the installed engines
+$SITC_ROOT/scripts/common/enable_in_webmo $DIR/servers/$name.engines $serverDir

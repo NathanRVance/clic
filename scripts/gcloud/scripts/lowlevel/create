@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#
+# Create infrastructure for a new duplicatable remote server.
+# Name is provided, and other attributes have been exported already.
+#
+
+name=$1
+
+if [ -e $API_ROOT/$name ]; then
+	echo "$API_ROOT/$name already exists! Exiting."
+	exit
+fi
+
+echo "Spawning $name..."
+$API_ROOT/scripts/lowlevel/spawn $name
+echo "Snapshoting $name..."
+$API_ROOT/scripts/lowlevel/snapshot $name $name
+echo "Deleting $name..."
+$API_ROOT/scripts/lowlevel/delete_instance $name

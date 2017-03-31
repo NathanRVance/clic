@@ -1,0 +1,6 @@
+#!/bin/bash
+
+name=$1
+fullname=`$API_ROOT/api get_fullname $name`
+
+echo "cat /proc/uptime | awk '{print \$1}'" | ssh $fullname

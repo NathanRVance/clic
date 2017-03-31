@@ -1,0 +1,17 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SITC_ROOT=$DIR/../
+source $SITC_ROOT/install.conf
+
+name=$1
+number=$2
+fullname=`$DIR/gcloud/api get_fullname $name$number`
+
+# delete the server from WebMO
+cd /home/$WEBMO_USER/public_html/cgi-bin/webmo/
+perl -e "require qw(servercontrol.cgi);
+delete_server(\"$fullname\");"
+
+# delete the server from google cloud
+$DIR/gcloud/api delete_instance $name$number

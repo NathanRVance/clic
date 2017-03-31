@@ -1,0 +1,29 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source $DIR/../install.conf
+
+if [ `whoami` != "$WEBMO_USER" ]; then
+	echo "You are `whoami`, but this script must be run as $WEBMO_USER"
+	exit
+fi
+
+# name of the snapshot
+name=$1
+
+# path to sitc on snapshot
+sitcpath=$2
+
+if [ -z "$sitcpath" ]; then
+	echo "No path specified, exiting..."
+	exit
+fi
+
+if [ ! -d "$DIR/servers" ]; then
+	mkdir $DIR/servers/
+fi
+
+$DIR/gcloud/api start_snapshot $name $name 10 standard 1
+fullname=`$DIR/gcloud/api get_fullname $name`
+scp $fullname:$sitcpath/engines.log $DIR/servers/$name.engines
+$DIR/gcloud/api delete_instance $name

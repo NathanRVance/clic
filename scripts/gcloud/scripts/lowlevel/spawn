@@ -1,0 +1,49 @@
+#!/bin/bash
+
+echo "Creating a compute node..."
+
+name="$1"
+
+gcloud compute instances create "$name" --machine-type "n1-$MEMORY-$NUMCPUS" --image-family "$IMAGE_FAMILY" --image-project "$IMAGE_PROJECT" --boot-disk-size "$DISKSIZE"
+
+# Set up ssh keys
+if [ ! -e "/home/$WEBMO_USER/.ssh/google_compute_engine" ]; then
+	echo "/home/$WEBMO_USER/.ssh/google_compute_engine" | ssh-keygen -N ""
+fi
+gcloud compute config-ssh
+rm /home/$WEBMO_USER/.ssh/config
+# Automatic passwordless ssh
+cp /home/$WEBMO_USER/.ssh/google_compute_engine /home/$WEBMO_USER/.ssh/id_rsa
+# Remove the host from knownhosts in case it collides with an existing one
+ssh-keygen -R $name
+# Remove the ip from knownhosts in case it collides with an existing one
+ip=`gcloud compute instances list "$name" | tail -1 | rev | awk '{ print $3 }' | rev`
+ssh-keygen -R $ip
+
+echo
+echo "########## Configuring $WEBMO_USER@$name ##########"
+
+for engine in `sed 's/,/ /g' <<< $ENGINES`; do
+	varname=${engine^^}_TAR
+	if [ -n "${!varname}" ]; then
+		destPath=`dirname ${!varname}`
+		echo "sudo mkdir -p $destPath && sudo chown $WEBMO_USER:$WEBMO_USER $destPath" | ssh -o StrictHostKeyChecking=no $WEBMO_USER@$name
+		echo "Copying ${!varname} to $WEBMO_USER@$name"
+		scp -o StrictHostKeyChecking=no ${!varname} $WEBMO_USER@${name}:${!varname}
+	fi
+done
+
+if [ -z "$REMOTE_SERVER_ENGINES" ]; then
+	REMOTE_SERVER_ENGINES="$ENGINES"
+fi
+
+echo "taring scripts to /home/$WEBMO_USER/sitc.tar.gz"
+cd $SITC_ROOT/..
+tar czf /home/$WEBMO_USER/sitc.tar.gz sitc --exclude=ran_os_additions
+
+scp -o StrictHostKeyChecking=no /home/$WEBMO_USER/sitc.tar.gz $WEBMO_USER@${name}:/home/$WEBMO_USER/sitc.tar.gz
+
+echo "tar xzf /home/$WEBMO_USER/sitc.tar.gz && /home/$WEBMO_USER/sitc/install -y --SKIP_WEBMO=true --REMOTE_SERVER=false --ENGINES=$REMOTE_SERVER_ENGINES" | ssh -o StrictHostKeyChecking=no $name
+
+echo "########## Finished work in $WEBMO_USER@$name ##########"
+echo
