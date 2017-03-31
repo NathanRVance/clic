@@ -1,0 +1,104 @@
+#!/bin/bash
+
+namescheme=`hostname`
+echo "Using $namescheme as the base name for the cluster"
+
+export MUNGEUSER=981
+sudo groupadd -g $MUNGEUSER munge
+sudo useradd  -m -c "MUNGE Uid 'N' Gid Emporium" -d /var/lib/munge -u $MUNGEUSER -g munge  -s /sbin/nologin munge
+export SLURMUSER=982
+sudo groupadd -g $SLURMUSER slurm
+sudo useradd  -m -c "Slurm workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
+
+echo "Installing munge"
+sudo yum -y install epel-release &> /dev/null
+sudo yum -y install munge munge-libs munge-devel &> /dev/null
+
+sudo dd if=/dev/urandom bs=1 count=1024 | sudo tee /etc/munge/munge.key > /dev/null
+sudo chown munge:munge /etc/munge/munge.key
+sudo chmod 400 /etc/munge/munge.key
+
+sudo chown -R munge:munge /etc/munge/ /var/log/munge/
+sudo chmod 0700 /etc/munge/ /var/log/munge/
+
+sudo systemctl enable munge
+sudo systemctl start munge
+
+echo "Installing slurm build dependencies"
+sudo yum -y install rpm-build gcc openssl openssl-devel pam-devel numactl numactl-devel hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel gtk2-devel man2html libibmad libibumad perl-Switch perl-ExtUtils-MakeMaker &> /dev/null
+sudo yum -y install mariadb-server mariadb-devel &> /dev/null
+
+echo "Downloading and building slurm"
+export VER=`curl -s https://www.schedmd.com/downloads.php | grep -oP 'latest/slurm-.*?.tar.bz2' | head -n 1 | grep -o '\([0-9][0-9]*.\)*' | rev | cut -c 2- | rev`
+cd /tmp
+curl -O https://www.schedmd.com/downloads/latest/slurm-$VER.tar.bz2
+rpmbuild -ta slurm-$VER.tar.bz2
+cd ~/rpmbuild/RPMS/x86_64/
+sudo yum -y install slurm-$VER*rpm slurm-devel-$VER*rpm slurm-munge-$VER*rpm slurm-perlapi-$VER*rpm slurm-plugins-$VER*rpm slurm-sjobexit-$VER*rpm slurm-sjstat-$VER*rpm slurm-torque-$VER*rpm slurm-seff-$VER*rpm
+
+sudo mkdir /var/spool/slurmctld /var/log/slurm
+sudo chown slurm: /var/spool/slurmctld /var/log/slurm
+sudo chmod 755 /var/spool/slurmctld /var/log/slurm
+
+sudo touch /var/log/slurm/slurmctld.log
+sudo chown slurm: /var/log/slurm/slurmctld.log
+
+sudo touch /var/log/slurm/slurm_jobacct.log /var/log/slurm/slurm_jobcomp.log
+sudo chown slurm: /var/log/slurm/slurm_jobacct.log /var/log/slurm/slurm_jobcomp.log
+
+# Set up exports. Only the head node needs this, but it isn't a problem to have this configured for all nodes.
+# Also, since head and compute nodes are identical in configuration, this isn't necessary for a CLuster
+# entirely In the Cloud. However, clic this is adapted for use with a local head node, it will be vital for
+# cloud compute nodes to access the local head node's configuration.
+sudo yum -y install nfs-utils
+exports="/etc/slurm 10.0.0.0/255.0.0.0(ro,sync,no_root_squash)
+/etc/munge 10.0.0.0/255.0.0.0(ro,sync,no_root_squash)
+/home/webmo/.ssh 10.0.0.0/255.0.0.0(ro,sync,no_root_squash)"
+echo "$exports" | sudo tee --append /etc/exports > /dev/null
+sudo systemctl enable nfs
+sudo systemctl start nfs
+
+#Make a good default slurm.conf
+namescheme=`hostname`
+slurmconf="ControlMachine=$namescheme
+ReturnToService=2
+SlurmUser=slurm
+StateSaveLocation=/var/spool/slurmctld
+ClusterName=cluster
+SlurmctldLogFile=/var/log/slurm/slurmctld.log
+SlurmdLogFile=/var/log/slurm/slurmd.log
+NodeName=$namescheme[01-99] CPUs=1 State=UNKNOWN
+PartitionName=debug Nodes=$namescheme[01-99] Default=YES MaxTime=INFINITE State=UP"
+echo "$slurmconf" | sudo tee /etc/slurm/slurm.conf > /dev/null
+
+#Create a script to get clic started
+clic="#!/bin/bash
+if [ \"\`hostname\`\" == \"$namescheme\" ]; then
+	# do head node stuff
+	systemctl start slurmctld.service
+else
+	# do compute node stuff
+	echo \"$namescheme:/etc/slurm            /etc/slurm              nfs     ro,hard,intr    0 0\" | sudo tee --append /etc/fstab > /dev/null
+	echo \"$namescheme:/etc/munge            /etc/munge              nfs     ro,hard,intr    0 0\" | sudo tee --append /etc/fstab > /dev/null
+	echo \"$namescheme:/home/webmo/.ssh      /home/webmo/.ssh        nfs     ro,hard,intr    0 0\" | sudo tee --append /etc/fstab > /dev/null
+	sudo mount /etc/slurm
+	sudo mount /etc/munge
+	sudo mount /home/webmo/.ssh
+	systemctl start slurmd.service
+fi"
+echo "$clic" | sudo tee /usr/bin/clic > /dev/null
+sudo chmod +x /usr/bin/clic
+
+clicservice="[Unit]
+Description=Start clic: CLuster In the Cloud
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/clic
+
+[Install]
+WantedBy=multi-user.target"
+echo "$clicservice" | sudo tee /etc/systemd/system/clic.service > /dev/null
+sudo systemctl enable clic.service
+sudo systemctl start clic.service
