@@ -13,7 +13,7 @@ if [ "`hostname`" == "NAMESCHEME" ]; then
         # do head node stuff
         echo "Starting slurmctld.service"
         systemctl start slurmctld.service
-	mainLoop
+	mainLoop &
 else
         # do compute node stuff
         echo "NAMESCHEME:/etc/slurm            /etc/slurm              nfs     ro,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
