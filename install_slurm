@@ -1,5 +1,7 @@
 #!/bin/bash
 
+CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 namescheme=`hostname`
 echo "Using $namescheme as the base name for the cluster"
 
@@ -47,58 +49,24 @@ sudo touch /var/log/slurm/slurm_jobacct.log /var/log/slurm/slurm_jobcomp.log
 sudo chown slurm: /var/log/slurm/slurm_jobacct.log /var/log/slurm/slurm_jobcomp.log
 
 # Set up exports. Only the head node needs this, but it isn't a problem to have this configured for all nodes.
-# Also, since head and compute nodes are identical in configuration, this isn't necessary for a CLuster
-# entirely In the Cloud. However, clic this is adapted for use with a local head node, it will be vital for
-# cloud compute nodes to access the local head node's configuration.
 sudo yum -y install nfs-utils
-exports="/etc/slurm 10.0.0.0/255.0.0.0(ro,sync,no_root_squash)
-/etc/munge 10.0.0.0/255.0.0.0(ro,sync,no_root_squash)
-/home/webmo/.ssh 10.0.0.0/255.0.0.0(ro,sync,no_root_squash)"
-echo "$exports" | sudo tee --append /etc/exports > /dev/null
+echo "\n/etc/exports:"
+cat $CLIC_ROOT/exports | sudo tee --append /etc/exports
 sudo systemctl enable nfs
 sudo systemctl start nfs
 
 #Make a good default slurm.conf
+echo "\n/etc/slurm/slurm.conf:"
 namescheme=`hostname`
-slurmconf="ControlMachine=$namescheme
-ReturnToService=2
-SlurmUser=slurm
-StateSaveLocation=/var/spool/slurmctld
-ClusterName=cluster
-SlurmctldLogFile=/var/log/slurm/slurmctld.log
-SlurmdLogFile=/var/log/slurm/slurmd.log
-NodeName=$namescheme[01-99] CPUs=1 State=UNKNOWN
-PartitionName=debug Nodes=$namescheme[01-99] Default=YES MaxTime=INFINITE State=UP"
-echo "$slurmconf" | sudo tee /etc/slurm/slurm.conf > /dev/null
+cat $CLIC_ROOT/slurm.conf | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/slurm/slurm.conf
 
-#Create a script to get clic started
-clic="#!/bin/bash
-if [ \"\`hostname\`\" == \"$namescheme\" ]; then
-	# do head node stuff
-	systemctl start slurmctld.service
-else
-	# do compute node stuff
-	echo \"$namescheme:/etc/slurm            /etc/slurm              nfs     ro,hard,intr    0 0\" | sudo tee --append /etc/fstab > /dev/null
-	echo \"$namescheme:/etc/munge            /etc/munge              nfs     ro,hard,intr    0 0\" | sudo tee --append /etc/fstab > /dev/null
-	echo \"$namescheme:/home/webmo/.ssh      /home/webmo/.ssh        nfs     ro,hard,intr    0 0\" | sudo tee --append /etc/fstab > /dev/null
-	sudo mount /etc/slurm
-	sudo mount /etc/munge
-	sudo mount /home/webmo/.ssh
-	systemctl start slurmd.service
-fi"
-echo "$clic" | sudo tee /usr/bin/clic > /dev/null
+#Create a daemon that runs clic
+echo "\n/usr/bin/clic:"
+cat $CLIC_ROOT/clic | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /usr/bin/clic
 sudo chmod +x /usr/bin/clic
 
-clicservice="[Unit]
-Description=Start clic: CLuster In the Cloud
-After=network.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/clic
-
-[Install]
-WantedBy=multi-user.target"
-echo "$clicservice" | sudo tee /etc/systemd/system/clic.service > /dev/null
+#Create a service to start the clic daemon
+echo "\n/etc/systemd/system/clic.service:"
+cat $CLIC_ROOT/clic.service | sudo tee /etc/systemd/system/clic.service
 sudo systemctl enable clic.service
 sudo systemctl start clic.service

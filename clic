@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# NAMESCHEME is the name of the head node, and all NAMESCHEMEXX are compute nodes.
+
+mainLoop() {
+	while [ "true" ]; do
+		echo "Doing stuff"
+		sleep 10
+	done
+}
+
+if [ "`hostname`" == "NAMESCHEME" ]; then
+        # do head node stuff
+        echo "Starting slurmctld.service"
+        systemctl start slurmctld.service
+	mainLoop
+else
+        # do compute node stuff
+        echo "NAMESCHEME:/etc/slurm            /etc/slurm              nfs     ro,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
+        echo "NAMESCHEME:/etc/munge            /etc/munge              nfs     ro,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
+        echo "NAMESCHEME:/home                /home                    nfs     ro,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
+        sudo mount /etc/slurm
+        sudo mount /etc/munge
+        echo "Starting slurmd.service"
+        systemctl start slurmd.service
+fi
