@@ -16,11 +16,12 @@ if [ "`hostname`" == "NAMESCHEME" ]; then
 	mainLoop &
 else
         # do compute node stuff
-        echo "NAMESCHEME:/etc/slurm            /etc/slurm              nfs     ro,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
-        echo "NAMESCHEME:/etc/munge            /etc/munge              nfs     ro,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
-        echo "NAMESCHEME:/home                /home                    nfs     ro,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
-        sudo mount /etc/slurm
-        sudo mount /etc/munge
+        #echo "NAMESCHEME:/etc/slurm            /etc/slurm              nfs     ro,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
+        #echo "NAMESCHEME:/etc/munge            /etc/munge              nfs     ro,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
+        #echo "NAMESCHEME:/home                 /home                   nfs     rw,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
+        sudo mount NAMESCHEME:/etc/slurm /etc/slurm --ro
+        sudo mount NAMESCHEME:/etc/munge /etc/munge --ro
+	sudo mount NAMESCHEME:/home /home --rw
         echo "Starting slurmd.service"
         systemctl start slurmd.service
 fi
