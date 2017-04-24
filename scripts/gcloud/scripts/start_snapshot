@@ -12,12 +12,12 @@ gcloud compute disks create $name --size $disksize --source-snapshot $snapshotNa
 gcloud compute instances create $name --machine-type "n1-$memory-$numcpus" --disk "name=$name,device-name=$name,mode=rw,boot=yes,auto-delete=yes"
 
 # Set up ssh keys
-if [ ! -e "/home/`whoami`/.ssh/google_compute_engine" ]; then
-        echo "/home/`whoami`/.ssh/google_compute_engine" | ssh-keygen -N ""
-fi
+#if [ ! -e "/home/`whoami`/.ssh/google_compute_engine" ]; then
+#        echo "/home/`whoami`/.ssh/google_compute_engine" | ssh-keygen -N ""
+#fi
 gcloud compute config-ssh
 # Get the correct host/ip added to knownhosts
-fullname=`$API_ROOT/scripts/get_fullname $name`
+#fullname=`$API_ROOT/scripts/get_fullname $name`
 # The snapshot might still be coming up, so wait a bit
-sleep 10
-echo "exit" | ssh -o StrictHostKeyChecking=no $fullname
+#sleep 10
+#echo "exit" | ssh -o StrictHostKeyChecking=no $fullname

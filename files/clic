@@ -2,11 +2,36 @@
 
 # NAMESCHEME is the name of the head node, and all NAMESCHEMEXX are compute nodes.
 
+TWIDDLE_TIME=20
+
 mainLoop() {
+	topJob=0
+	topJobEnq=`uptime`
 	while [ "true" ]; do
 		echo "Doing stuff"
+		# Queued and running jobs are one line each containing the job number
+		rJobs=`qstat -r | tail -n+6 | awk '{print $1}'`
+		qJobs=`qstat -i | tail -n+6 | awk '{print $1}'`
+		
+		if [ "$topJob" != `echo $qJobs | head -n 1` ]; then
+			# A job was run
+			topJob=`echo $qJobs | head -n 1`
+			topJobEnq=`uptime`
+		fi
+		
+		if [ -n "$topJob" ] && [ $topJobEnq -lt $(($(uptime) - $TWIDDLE_TIME)) ]; then
+			# Time to boot up another compute node
+
+		fi
+		
+
+
 		sleep 10
 	done
+}
+
+uptime() {
+	cat /proc/uptime | awk '{print $1}' #In seconds
 }
 
 if [ "`hostname`" == "NAMESCHEME" ]; then
