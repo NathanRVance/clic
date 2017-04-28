@@ -13,18 +13,18 @@ mainLoop() {
 		rJobs=`qstat -r | tail -n+6 | awk '{print $1}'`
 		qJobs=`qstat -i | tail -n+6 | awk '{print $1}'`
 		
-		if [ "$topJob" != `echo $qJobs | head -n 1` ]; then
+		if [ "$topJob" != "`echo $qJobs | head -n 1`" ]; then
 			# A job was run
 			topJob=`echo $qJobs | head -n 1`
 			topJobEnq=`uptime`
 		fi
 		
-		if [ -n "$topJob" ] && [ $topJobEnq -lt $(($(uptime) - $TWIDDLE_TIME)) ]; then
+		if [ -n "$topJob" ] && [ $topJobEnq -lt $((${uptime}-TWIDDLE_TIME)) ]; then
 			# Time to boot up another compute node
 			echo "I want to make another node!"
 		fi
 
-		if [ -z "$topJob" ] && [ $topJobEnq -lt $(($(uptime) - $TWIDDLE_TIME)) ]; then
+		if [ -z "$topJob" ] && [ $topJobEnq -lt $((${uptime}-TWIDDLE_TIME)) ]; then
 			# Time to shut down a compute node
 			echo "I want to delete a node!"
 		fi

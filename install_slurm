@@ -31,7 +31,7 @@ sudo yum -y install rpm-build gcc openssl openssl-devel pam-devel numactl numact
 sudo yum -y install mariadb-server mariadb-devel &> /dev/null
 
 echo "Downloading and building slurm"
-export VER=`curl -s https://www.schedmd.com/downloads.php | grep -oP 'latest/slurm-.*?.tar.bz2' | head -n 1 | grep -o '\([0-9][0-9]*.\)*' | rev | cut -c 2- | rev`
+VER=`curl -s https://www.schedmd.com/downloads.php | grep -oP 'latest/slurm-.*?.tar.bz2' | head -n 1 | grep -o '\([0-9][0-9]*.\)*' | rev | cut -c 2- | rev`
 cd /tmp
 curl -O https://www.schedmd.com/downloads/latest/slurm-$VER.tar.bz2
 rpmbuild -ta slurm-$VER.tar.bz2
