@@ -18,7 +18,7 @@ mainLoop() {
 			topJob=`echo $qJobs | head -n 1`
 			topJobEnq=`uptime`
 		fi
-		
+	
 		if [ -n "$topJob" ] && [ $topJobEnq -lt $((${uptime}-TWIDDLE_TIME)) ]; then
 			# Time to boot up another compute node
 			echo "I want to make another node!"
@@ -34,7 +34,7 @@ mainLoop() {
 }
 
 uptime() {
-	cat /proc/uptime | awk '{print $1}' #In seconds
+	cat /proc/uptime | awk '{print $1}' | cut -d '.' -f 1 # In seconds, rounded down
 }
 
 if [ "`hostname`" == "NAMESCHEME" ]; then
