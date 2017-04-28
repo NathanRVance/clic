@@ -21,10 +21,13 @@ mainLoop() {
 		
 		if [ -n "$topJob" ] && [ $topJobEnq -lt $(($(uptime) - $TWIDDLE_TIME)) ]; then
 			# Time to boot up another compute node
-
+			echo "I want to make another node!"
 		fi
-		
 
+		if [ -z "$topJob" ] && [ $topJobEnq -lt $(($(uptime) - $TWIDDLE_TIME)) ]; then
+			# Time to shut down a compute node
+			echo "I want to delete a node!"
+		fi
 
 		sleep 10
 	done
