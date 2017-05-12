@@ -4,6 +4,7 @@
 
 TWIDDLE_TIME=20
 SLEEP_TIME=10
+MAX_NODE_NUM=99
 
 mainLoop() {
 	while [ "true" ]; do
@@ -17,7 +18,8 @@ mainLoop() {
 			job[$jobNum]=`expr ${job[$jobNum]} + $SLEEP_TIME`
 			if [ "${job[$jobNum]}" -gt "$TWIDDLE_TIME" ]; then
 				# Time to boot up another compute node
-				echo "I want to make another node!"
+				echo "Creating"
+				create &
 			fi
 		done
 
@@ -26,8 +28,11 @@ mainLoop() {
 			if [ -z "$emptyTime" ]; then
 				emptyTime=`uptime`
 			elif [ "$(expr $(uptime) - $emptyTime)" -gt "$TWIDDLE_TIME" ]; then
-				# ...and have for some time
-				echo "I want to delete a node!"
+				# ...and have sat idle for some time
+				nodeToDelete="`sinfo -o "%t %n" | grep "idle" | head -n 1 | awk '{print $2}'`"
+				echo "Deleting: $nodeToDelete"
+				#TODO: Make this process more graceful
+				delete $nodeToDelete &
 				emptyTime=""
 			fi
 		elif [ -n "$emptyTime" ]; then
@@ -43,10 +48,30 @@ uptime() {
 	cat /proc/uptime | awk '{print $1}' | cut -d '.' -f 1 # In seconds, rounded down
 }
 
+create() {
+	# Start by determining the next node name to use
+	namesUsed="`gcloud compute instances list | tail -n+2 | awk '{print $1}'`"
+	for num in $(seq -w 1 $MAX_NODE_NUM); do
+		if [ -z "`grep "NAMESCHEME$num " <<< "$namesUsed"`" ];  then
+			gcloud compute disks create NAMESCHEME$num --size 10 --source-snapshot NAMESCHEME
+			gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes"
+			break
+		fi
+	done
+}
+
+delete() {
+	nodeToDelete="$1"
+	echo Y | gcloud compute instances delete $nodeToDelete
+}
+
 if [ "`hostname`" == "NAMESCHEME" ]; then
         # do head node stuff
         echo "Starting slurmctld.service"
         systemctl start slurmctld.service
+	zone=`gcloud compute instances list | grep "$(hostname) " | awk '{print $2}'`
+	echo "Configuring gcloud for zone: $zone"
+	gcloud config set compute/zone $zone
 	mainLoop &
 else
         # do compute node stuff
