@@ -13,26 +13,31 @@ mainLoop() {
 		rJobs=`qstat -r | tail -n+6 | awk '{print $1}'`
 		qJobs=`qstat -i | tail -n+6 | awk '{print $1}'`
 
+		nodesWanted=0
 		for jobNum in $qJobs; do
 			if [ -z ${job[$jobNum]} ]; then job[$jobNum]=0; fi
 			job[$jobNum]=`expr ${job[$jobNum]} + $SLEEP_TIME`
 			if [ "${job[$jobNum]}" -gt "$TWIDDLE_TIME" ]; then
 				# Time to boot up another compute node
-				echo "Creating"
-				create &
+				nodesWanted=`expr $nodesWanted + 1`
 			fi
 		done
 
-		if [ -z "$qJobs" ] && [ "`sinfo -h -o %A | cut -d '/' -f 2`" -gt "0" ]; then
+		if [ "$(expr $nodesWanted + $(echo $rJobs | wc -l))" -gt "$(upNodes | wc -l)" ]; then
+			for node in `seq 0 $nodesWanted`; do
+				echo "Creating"
+				create &
+			done
+		fi
+
+		if [ -z "$qJobs" ] && [ "`numIdle`" -gt "0" ]; then
 			# Node(s) sit idle...
 			if [ -z "$emptyTime" ]; then
 				emptyTime=`uptime`
 			elif [ "$(expr $(uptime) - $emptyTime)" -gt "$TWIDDLE_TIME" ]; then
 				# ...and have sat idle for some time
-				nodeToDelete="`sinfo -o "%t %n" | grep "idle" | head -n 1 | awk '{print $2}'`"
-				echo "Deleting: $nodeToDelete"
-				#TODO: Make this process more graceful
-				delete $nodeToDelete &
+				echo "Deleting"
+				delete &
 				emptyTime=""
 			fi
 		elif [ -n "$emptyTime" ]; then
@@ -48,11 +53,24 @@ uptime() {
 	cat /proc/uptime | awk '{print $1}' | cut -d '.' -f 1 # In seconds, rounded down
 }
 
+numIdle() {
+	num="`sinfo -h -o %A | cut -d '/' -f 2`"	
+	if [ -z "$num" ]; then
+		echo 0
+	else
+		echo $num
+	fi
+}
+
+upNodes() {
+	gcloud compute instances list | tail -n+2 | awk '{print $1}'
+}
+
 create() {
 	# Start by determining the next node name to use
 	namesUsed="`gcloud compute instances list | tail -n+2 | awk '{print $1}'`"
 	for num in $(seq -w 1 $MAX_NODE_NUM); do
-		if [ -z "`grep "NAMESCHEME$num " <<< "$namesUsed"`" ];  then
+		if [ -z "`grep "NAMESCHEME$num" <<< "$namesUsed"`" ];  then
 			gcloud compute disks create NAMESCHEME$num --size 10 --source-snapshot NAMESCHEME
 			gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes"
 			break
@@ -61,8 +79,14 @@ create() {
 }
 
 delete() {
-	nodeToDelete="$1"
-	echo Y | gcloud compute instances delete $nodeToDelete
+	idleNodes="`sinfo -o "%t %n" | grep "idle" | awk '{print $2}'`"
+	upNodes=`upNodes`
+	for toDelete in $idleNodes; do
+		if [ -n "`grep $toDelete <<< $upNodes`" ]; then
+			echo Y | gcloud compute instances delete $toDelete
+			break
+		fi
+	done
 }
 
 if [ "`hostname`" == "NAMESCHEME" ]; then
