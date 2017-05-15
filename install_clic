@@ -1,0 +1,22 @@
+#!/bin/bash
+
+CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+namescheme=`hostname`
+echo "Using $namescheme as the base name for the cluster"
+
+#Make a good default slurm.conf
+echo -e "\n/etc/slurm/slurm.conf:"
+cat $CLIC_ROOT/files/slurm.conf | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/slurm/slurm.conf
+
+#Create a daemon that runs clic
+echo -e "\n/usr/bin/clic:"
+cat $CLIC_ROOT/files/clic | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /usr/bin/clic
+sudo chmod +x /usr/bin/clic
+
+#Create a service to start the clic daemon
+echo -e "\n/etc/systemd/system/clic.service:"
+cat $CLIC_ROOT/files/clic.service | sudo tee /etc/systemd/system/clic.service
+sudo systemctl enable clic.service
+sudo systemctl start clic.service
+

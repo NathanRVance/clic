@@ -1,0 +1,6 @@
+#!/bin/bash
+
+CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+$CLIC_ROOT/install_slurm
+$CLIC_ROOT/install_clic

@@ -2,9 +2,6 @@
 
 CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-namescheme=`hostname`
-echo "Using $namescheme as the base name for the cluster"
-
 export MUNGEUSER=981
 sudo groupadd -g $MUNGEUSER munge
 sudo useradd  -m -c "MUNGE Uid 'N' Gid Emporium" -d /var/lib/munge -u $MUNGEUSER -g munge  -s /sbin/nologin munge
@@ -54,19 +51,3 @@ echo -e "\n/etc/exports:"
 cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
 sudo systemctl enable nfs
 sudo systemctl start nfs
-
-#Make a good default slurm.conf
-echo -e "\n/etc/slurm/slurm.conf:"
-namescheme=`hostname`
-cat $CLIC_ROOT/files/slurm.conf | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/slurm/slurm.conf
-
-#Create a daemon that runs clic
-echo -e "\n/usr/bin/clic:"
-cat $CLIC_ROOT/files/clic | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /usr/bin/clic
-sudo chmod +x /usr/bin/clic
-
-#Create a service to start the clic daemon
-echo -e "\n/etc/systemd/system/clic.service:"
-cat $CLIC_ROOT/files/clic.service | sudo tee /etc/systemd/system/clic.service
-sudo systemctl enable clic.service
-sudo systemctl start clic.service
