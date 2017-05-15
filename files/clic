@@ -36,6 +36,7 @@ mainLoop() {
 			nodesWanted=1
 		fi
 
+		echo "Nodes wanted: $nodesWanted, Nodes up: $nodesUp, Nodes booting: $nodesBooting"
 		# Check that the nodes wanted aren't currently booting (nodesWanted + jobsRunning > nodesUp)
 		nodesWanted=$((($nodesWanted - $nodesBooting + 1) / 2))
 		create $nodesWanted
