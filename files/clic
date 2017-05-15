@@ -116,7 +116,7 @@ state() {
 
 timeInState() {
 	node="`echo $1 | sed 's/^0*//'`"
-	$(expr $(uptime) - $(echo ${nodes[$node]} | awk '{print $2}'))
+	expr `uptime` - `echo ${nodes[$node]} | awk '{print $2}'`
 }
 
 setState() {
