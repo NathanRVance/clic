@@ -30,7 +30,7 @@ mainLoop() {
 
 		# Check that the nodes wanted aren't currently booting (nodesWanted + jobsRunning > nodesUp)
 		if [ "$(expr $nodesWanted + $(echo $rJobs | wc -l))" -gt "$nodesUp" ]; then
-			for node in `seq 0 $nodesWanted`; do
+			for node in `seq 1 $nodesWanted`; do
 				echo "Creating"
 				create &
 			done
