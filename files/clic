@@ -71,17 +71,18 @@ mainLoop() {
 					setState $node R
 				elif [ -z "`state $node`" ]; then
 					# Node isn't registered. Maybe the script was restarted?
-					echo "ERROR: Encountered unregistered node, subsuming into cluster"
+					echo "ERROR: Encountered unregistered node NAMESCHEME$node, subsuming into cluster"
 					setState $node R
 				fi
 			elif [ "`state $node`" != "C" ]; then
 				# Node was deleted
 				if [ "`state $node`" == "R" ]; then
 					# That deletion was unexpected.
-					echo "ERROR: Node deleted outside of clic!"
+					echo "ERROR: Node NAMESCHEME$node deleted outside of clic!"
 				fi
 				setState $node ""
 			fi
+			#TODO: Check for nodes that take forever booting. Chances are the disk was already created.
 		done
 		
 		sleep $SLEEP_TIME
@@ -102,7 +103,7 @@ numIdle() {
 }
 
 upNodes() {
-	gcloud compute instances list | tail -n+2 | awk '{print $1}'
+	sinfo -r -h -o %N
 }
 
 state() {
