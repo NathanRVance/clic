@@ -81,8 +81,11 @@ mainLoop() {
 					echo "ERROR: Node NAMESCHEME$node deleted outside of clic!"
 				fi
 				setState $node ""
+			elif [ "`timeInState $node`" -gt 200 ]; then
+				# In create state, and taking way too long. Chances are the disk was already created, so we should delete that
+				echo Y | gcloud compute disks delete NAMESCHEME$num &> /dev/null &
+				setState $node ""
 			fi
-			#TODO: Check for nodes that take forever booting. Chances are the disk was already created.
 		done
 		
 		sleep $SLEEP_TIME
@@ -109,6 +112,11 @@ upNodes() {
 state() {
 	node="`echo $1 | sed 's/^0*//'`"
 	echo ${nodes[$node]} | awk '{print $1}'
+}
+
+timeInState() {
+	node="`echo $1 | sed 's/^0*//'`"
+	$(expr $(uptime) - $(echo ${nodes[$node]} | awk '{print $2}'))
 }
 
 setState() {
