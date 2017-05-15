@@ -14,9 +14,12 @@ mainLoop() {
 
 		nodesWanted=0
 		nodesUp=0
+		nodesBooting=0
 		for node in $(seq -w 1 $MAX_NODE_NUM); do
-			if [ "`state $node`" == "R" ] || [ "`state $node`" == "C" ]; then
+			if [ "`state $node`" == "R" ]; then
 				nodesUp=`expr $nodesUp + 1`
+			elif [ "`state $node`" == "C" ]; then
+				nodesBooting=`expr $nodesBooting + 1`
 			fi
 		done
 		for jobNum in $qJobs; do
@@ -29,30 +32,24 @@ mainLoop() {
 			fi
 		done
 		# If we have a queued job but no up nodes, we'll want to make one without waiting
-		if [ -n "$qJobs" ] && [ "$nodesUp" -eq 0 ] && [ "$nodesWanted" -eq 0 ]; then
+		if [ -n "$qJobs" ] && [ "$nodesUp" -eq 0 ] && [ "$nodesBooting" -eq 0 ] && [ "$nodesWanted" -eq 0 ]; then
 			nodesWanted=1
 		fi
 
 		# Check that the nodes wanted aren't currently booting (nodesWanted + jobsRunning > nodesUp)
-		if [ "$(expr $nodesWanted + $(echo -n $rJobs | wc -l))" -gt "$nodesUp" ]; then
-			echo "Nodes wanted: $nodesWanted"
-			echo "Jobs running: $(echo -n $rJobs | wc -l)"
-			echo "Nodes up: $nodesUp"
-			for node in `seq 1 $nodesWanted`; do
-				echo "Creating"
-				create
-			done
-		fi
+		nodesWanted=$((($nodesWanted - $nodesBooting + 1) / 2))
+		create $nodesWanted
 
 		# Check for nodes to delete
-		if [ -z "$qJobs" ] && [ "`numIdle`" -gt "0" ]; then
+		numIdle=`numIdle`
+		if [ -z "$qJobs" ] && [ "$numIdle" -gt "0" ]; then
 			# Node(s) sit idle...
 			if [ -z "$emptyTime" ]; then
 				emptyTime=`uptime`
 			elif [ "$(expr $(uptime) - $emptyTime)" -gt "$TWIDDLE_TIME" ]; then
 				# ...and have sat idle for some time
-				echo "Deleting"
-				delete
+				numToDelete=$((($numIdle + 1) / 2))
+				delete $numToDelete
 				emptyTime=""
 			fi
 		elif [ -n "$emptyTime" ]; then
@@ -123,26 +120,33 @@ setState() {
 }
 
 create() {
+	numToCreate=$1
 	# Determine the next node name to use
-	namesUsed="`gcloud compute instances list | tail -n+2 | awk '{print $1}'`"
-	for num in $(seq -w 1 $MAX_NODE_NUM); do
-		if [ -z "`grep "NAMESCHEME$num" <<< "$namesUsed"`" ] && [ -z "`state $num`" ]; then
-			setState $num C
-			gcloud compute disks create NAMESCHEME$num --size 10 --source-snapshot NAMESCHEME &> /dev/null &&
-			gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes" &> /dev/null &
-			break
-		fi
+	for i in `seq 1 $numToCreate`; do
+		for num in $(seq -w 1 $MAX_NODE_NUM); do
+			if [ -z "`state $num`" ]; then
+				setState $num C
+				echo "Creating NAMESCHEME$num"
+				gcloud compute disks create NAMESCHEME$num --size 10 --source-snapshot NAMESCHEME &> /dev/null &&
+				gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes" &> /dev/null &
+				break
+			fi
+		done
 	done
 }
 
 delete() {
+	numToDelete=$1
 	idleNodes="`sinfo -o "%t %n" | grep "idle" | awk '{print $2}'`"
-	for num in $(seq -w 1 $MAX_NODE_NUM); do
-		if [ -n "`grep "NAMESCHEME$num" <<< "$idleNodes"`" ] && [ "`state $num`" == "R" ]; then
-			setState $num D
-			echo Y | gcloud compute instances delete NAMESCHEME$num &> /dev/null &
-			break
-		fi	
+	for i in `seq 1 $numToDelete`; do
+		for num in $(seq -w 1 $MAX_NODE_NUM); do
+			if [ -n "`grep "NAMESCHEME$num" <<< "$idleNodes"`" ] && [ "`state $num`" == "R" ]; then
+				setState $num D
+				echo "Deleting NAMESCHEME$num"
+				echo Y | gcloud compute instances delete NAMESCHEME$num &> /dev/null &
+				break
+			fi	
+		done
 	done
 }
 
