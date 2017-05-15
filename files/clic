@@ -13,7 +13,7 @@ mainLoop() {
 		qJobs=`qstat -i | tail -n+6 | awk '{print $1}'`
 
 		nodesWanted=0
-		nodesUp=`upNodes`
+		nodesUp=`upNodes | wc -l`
 		for jobNum in $qJobs; do
 			# Keep track of time jobs have been queued
 			if [ -z ${job[$jobNum]} ]; then job[$jobNum]=0; fi
@@ -29,7 +29,7 @@ mainLoop() {
 		fi
 
 		# Check that the nodes wanted aren't currently booting (nodesWanted + jobsRunning > nodesUp)
-		if [ "$(expr $nodesWanted + $(echo $rJobs | wc -l))" -gt "$(echo $nodesUp | wc -l)" ]; then
+		if [ "$(expr $nodesWanted + $(echo $rJobs | wc -l))" -gt "$nodesUp" ]; then
 			for node in `seq 0 $nodesWanted`; do
 				echo "Creating"
 				create &

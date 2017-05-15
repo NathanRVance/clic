@@ -18,5 +18,5 @@ sudo chmod +x /usr/bin/clic
 echo -e "\n/etc/systemd/system/clic.service:"
 cat $CLIC_ROOT/files/clic.service | sudo tee /etc/systemd/system/clic.service
 sudo systemctl enable clic.service
-sudo systemctl start clic.service
+sudo systemctl restart clic.service
 
