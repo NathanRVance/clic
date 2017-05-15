@@ -19,7 +19,6 @@ mainLoop() {
 				nodesUp=`expr $nodesUp + 1`
 			fi
 		done
-		echo "Nodes up: $nodesUp"
 		for jobNum in $qJobs; do
 			# Keep track of time jobs have been queued
 			if [ -z ${job[$jobNum]} ]; then job[$jobNum]=0; fi
@@ -36,6 +35,9 @@ mainLoop() {
 
 		# Check that the nodes wanted aren't currently booting (nodesWanted + jobsRunning > nodesUp)
 		if [ "$(expr $nodesWanted + $(echo $rJobs | wc -l))" -gt "$nodesUp" ]; then
+			echo "Nodes wanted: $nodesWanted"
+			echo "Jobs running: $(echo $rJobs | wc -l)"
+			echo "Nodes up: $nodesUp"
 			for node in `seq 1 $nodesWanted`; do
 				echo "Creating"
 				create
