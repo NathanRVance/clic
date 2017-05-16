@@ -100,7 +100,7 @@ uptime() {
 }
 
 numIdle() {
-	num="`sinfo -h -o %A | cut -d '/' -f 2`"	
+	num="`sinfo -h -r -o %A | cut -d '/' -f 2`"	
 	if [ -z "$num" ]; then
 		echo 0
 	else
@@ -109,7 +109,7 @@ numIdle() {
 }
 
 upNodes() {
-	sinfo -h -N -r -o %N # Race condition: reports up before it's ready
+	sinfo -h -N -r -o %N
 }
 
 state() {
