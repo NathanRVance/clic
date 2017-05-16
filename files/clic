@@ -27,15 +27,10 @@ mainLoop() {
 			if [ -z ${job[$jobNum]} ]; then job[$jobNum]=0; fi
 			job[$jobNum]=`expr ${job[$jobNum]} + $SLEEP_TIME`
 			# Determine if we need another node
-			if [ "${job[$jobNum]}" -gt "$TWIDDLE_TIME" ]; then
+			if [[ "$nodesBooting" == 0 && ( "${job[$jobNum]}" > "$TWIDDLE_TIME" || "$nodesUp" == 0 ) ]]; then
 				nodesWanted=`expr $nodesWanted + 1`
 			fi
 		done
-		# If we have a queued job but no up nodes, we'll want to make one without waiting
-		if [ -n "$qJobs" ] && [ "$nodesUp" -eq 0 ] && [ "$nodesBooting" -eq 0 ] && [ "$nodesWanted" -eq 0 ]; then
-			nodesWanted=1
-		fi
-
 		nodesIdle=`numIdle`
 		echo "Nodes wanted: $nodesWanted, Nodes up: $nodesUp, Nodes idle: $nodesIdle Nodes booting: $nodesBooting"
 		# Check that the nodes wanted aren't currently booting (nodesWanted + jobsRunning > nodesUp)
