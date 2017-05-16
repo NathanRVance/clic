@@ -88,6 +88,8 @@ mainLoop() {
 				if [ "`state $node`" == "R" ]; then
 					# That deletion was unexpected.
 					echo "ERROR: Node NAMESCHEME$node deleted outside of clic!" | tee -a $LOGFILE
+					sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleted"
+					sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
 				fi
 				setState $node ""
 			elif [ "`timeInState $node`" -gt 200 ]; then
