@@ -97,7 +97,7 @@ uptime() {
 }
 
 numIdle() {
-	num="`sinfo -h -N -o %A | cut -d '/' -f 2`"	
+	num="`sinfo -h -o %A | cut -d '/' -f 2`"	
 	if [ -z "$num" ]; then
 		echo 0
 	else
