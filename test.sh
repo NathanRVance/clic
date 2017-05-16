@@ -33,7 +33,7 @@ echo "time jobsQueued jobsRunning nodesUp" > out
 touch addingJobs
 while :; do
 	if [ -e addingJobs ]; then
-		execute `rand 0 5` `rand 1 50` #Add 0-5 sleep 1-50 jobs to the queue
+		execute `rand 0 3` `rand 1 50` #Add 0-3 sleep 1-50 jobs to the queue
 	fi
         sleep 10
         rCount=`qstat -r | tail -n+6 | wc -l`
