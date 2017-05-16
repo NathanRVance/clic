@@ -2,6 +2,7 @@
 
 # NAMESCHEME is the name of the head node, and all NAMESCHEMEXX are compute nodes.
 
+LOGFILE="/var/log/clic.log"
 TWIDDLE_TIME=20
 SLEEP_TIME=10
 MAX_NODE_NUM=99
@@ -32,7 +33,7 @@ mainLoop() {
 			fi
 		done
 		nodesIdle=`numIdle`
-		echo "Nodes wanted: $nodesWanted, Nodes up: $nodesUp, Nodes idle: $nodesIdle Nodes booting: $nodesBooting"
+		echo "Nodes wanted: $nodesWanted, Nodes up: $nodesUp, Nodes idle: $nodesIdle Nodes booting: $nodesBooting" | tee -a $LOGFILE
 		# Check that the nodes wanted aren't currently booting (nodesWanted + jobsRunning > nodesUp)
 		nodesWanted=$((($nodesWanted - $nodesBooting + 1) / 2))
 		if [ $nodesWanted -gt 10 ]; then nodesWanted=10; fi #cap it at 10
@@ -67,7 +68,7 @@ mainLoop() {
 				# Slurm thinks the node is up, but Google doesn't.
 				if [ -n "`state $node`" ]; then
 					# We thought it was up, too
-					echo "WARNING: Node NAMESCHEME$node went down"
+					echo "WARNING: Node NAMESCHEME$node went down" | tee -a $LOGFILE
 					sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleted"
 					sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
 					setState $node ""
@@ -79,19 +80,19 @@ mainLoop() {
 					setState $node R
 				elif [ -z "`state $node`" ]; then
 					# Node isn't registered. Maybe the script was restarted?
-					echo "ERROR: Encountered unregistered node NAMESCHEME$node, subsuming into cluster"
+					echo "ERROR: Encountered unregistered node NAMESCHEME$node, subsuming into cluster" | tee -a $LOGFILE
 					setState $node R
 				fi
 			elif [ "`state $node`" != "C" ]; then
 				# Node was deleted
 				if [ "`state $node`" == "R" ]; then
 					# That deletion was unexpected.
-					echo "ERROR: Node NAMESCHEME$node deleted outside of clic!"
+					echo "ERROR: Node NAMESCHEME$node deleted outside of clic!" | tee -a $LOGFILE
 				fi
 				setState $node ""
 			elif [ "`timeInState $node`" -gt 200 ]; then
 				# In create state, and taking way too long. Chances are the disk was already created, so we should delete that
-				echo "ERROR: Node NAMESCHEME$node hung on boot"
+				echo "ERROR: Node NAMESCHEME$node hung on boot" | tee -a $LOGFILE
 				echo Y | gcloud compute disks delete NAMESCHEME$num &> /dev/null &
 				setState $node ""
 			fi
@@ -150,7 +151,7 @@ create() {
 			if [ -z "`state $num`" ]; then
 				setState $num C
 				sudo scontrol update nodename=NAMESCHEME$num state=resume
-				echo "Creating NAMESCHEME$num"
+				echo "Creating NAMESCHEME$num" | tee -a $LOGFILE
 				gcloud compute disks create NAMESCHEME$num --size 10 --source-snapshot NAMESCHEME &> /dev/null &&
 				gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes" &> /dev/null &
 				break
@@ -168,7 +169,7 @@ delete() {
 				setState $num D
 				sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleting"
 				sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleting"
-				echo "Deleting NAMESCHEME$num"
+				echo "Deleting NAMESCHEME$num" | tee -a $LOGFILE
 				echo Y | gcloud compute instances delete NAMESCHEME$num &> /dev/null &
 				break
 			fi
@@ -178,10 +179,13 @@ delete() {
 
 if [ "`hostname`" == "NAMESCHEME" ]; then
         # do head node stuff
-        echo "Starting slurmctld.service"
+	sudo rm $LOGFILE
+	sudo touch $LOGFILE
+	sudo chown `whoami`:`whoami` $LOGFILE
+        echo "Starting slurmctld.service" | tee -a $LOGFILE
         systemctl start slurmctld.service
 	zone=`gcloud compute instances list | grep "$(hostname) " | awk '{print $2}'`
-	echo "Configuring gcloud for zone: $zone"
+	echo "Configuring gcloud for zone: $zone" | tee -a $LOGFILE
 	gcloud config set compute/zone $zone
 	mainLoop &
 else

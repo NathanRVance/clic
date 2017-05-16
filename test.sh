@@ -5,7 +5,7 @@ echo "time jobsQueued jobsRunning nodesUp" > out
 cat > job.sh << EOF
 #!/bin/bash
 echo "Starting"
-sleep 100
+sleep 10
 echo "Done"
 EOF
 
