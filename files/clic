@@ -18,7 +18,7 @@ mainLoop() {
 		for node in $(seq -w 1 $MAX_NODE_NUM); do
 			if [ "`state $node`" == "R" ]; then
 				nodesUp=`expr $nodesUp + 1`
-			elif [ `state $node` == "C" ] ; then
+			elif [ "`state $node`" == "C" ]; then
 				nodesBooting=`expr $nodesBooting + 1`
 			fi
 		done
