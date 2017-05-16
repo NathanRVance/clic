@@ -18,7 +18,7 @@ mainLoop() {
 		for node in $(seq -w 1 $MAX_NODE_NUM); do
 			if [ "`state $node`" == "R" ]; then
 				nodesUp=`expr $nodesUp + 1`
-			elif [[ `state $node` == "C" || ( `state $node` == "R" && `timeInState $node` < 20 ) ]] ; then
+			elif [[ `state $node` == "C" || ( `state $node` == "R" && `timeInState $node` < $TWIDDLE_TIME ) ]] ; then
 				nodesBooting=`expr $nodesBooting + 1`
 			fi
 		done
@@ -97,7 +97,7 @@ uptime() {
 }
 
 numIdle() {
-	num="`sinfo -h -o %A | cut -d '/' -f 2`"	
+	num="`sinfo -h -N -o %A | cut -d '/' -f 2`"	
 	if [ -z "$num" ]; then
 		echo 0
 	else
@@ -106,7 +106,7 @@ numIdle() {
 }
 
 upNodes() {
-	sinfo -r -h -o %N # Race condition: reports up before it's ready
+	sinfo -h -N -r -o %N # Race condition: reports up before it's ready
 }
 
 state() {
