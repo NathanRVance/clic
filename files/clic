@@ -73,8 +73,8 @@ mainLoop() {
 					sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
 					setState $node ""
 				fi
-			elif [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ]; then
-				# Google says the node is up, but Slurm can't contact it
+			elif [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ] && [ "`state $node`" != "D" ]; then
+				# Google says the node is up, but Slurm can't contact it, and we aren't deleting it
 				echo "ERROR: Node NAMESCHEME$node is unresponsive" | tee -a $LOGFILE
 				deleteInstance $node
 			elif [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
