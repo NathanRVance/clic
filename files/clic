@@ -60,9 +60,16 @@ mainLoop() {
 		# ID : "<C|R|D> uptime when state was entered"
 		# C=creating, R=running, D=deleting
 		# Null string for deleted nodes
-		nodenamesUp=`upNodes`
+		nodenamesUp=`upNodes` # As reported by slurm
+		googleReported=`googleReportedUp` # Nodes we think are up that aren't included here aren't actually up
 		for node in $(seq -w 1 $MAX_NODE_NUM); do
-			if [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
+			if [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
+				# Slurm thinks the node is up, but Google doesn't.
+				echo "WARNING: Node NAMESCHEME$node went down"
+				sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleted"
+				sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
+				setState $node ""
+			elif [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
 				# Node is running
 				if [ "`state $node`" == "C" ]; then
 					# Node was creating
@@ -81,6 +88,7 @@ mainLoop() {
 				setState $node ""
 			elif [ "`timeInState $node`" -gt 200 ]; then
 				# In create state, and taking way too long. Chances are the disk was already created, so we should delete that
+				echo "ERROR: Node NAMESCHEME$node hung on boot"
 				echo Y | gcloud compute disks delete NAMESCHEME$num &> /dev/null &
 				setState $node ""
 			fi
@@ -105,6 +113,10 @@ numIdle() {
 
 upNodes() {
 	sinfo -h -N -r -o %N
+}
+
+googleReportedUp() {
+	gcloud compute instances list | tail -n+2 | awk '{print $1}'	
 }
 
 state() {
@@ -134,6 +146,7 @@ create() {
 		for num in $(seq -w 1 $MAX_NODE_NUM); do
 			if [ -z "`state $num`" ]; then
 				setState $num C
+				sudo scontrol update nodename=NAMESCHEME$num state=resume
 				echo "Creating NAMESCHEME$num"
 				gcloud compute disks create NAMESCHEME$num --size 10 --source-snapshot NAMESCHEME &> /dev/null &&
 				gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes" &> /dev/null &
@@ -150,6 +163,8 @@ delete() {
 		for num in $(seq -w 1 $MAX_NODE_NUM); do
 			if [ -n "`grep "NAMESCHEME$num" <<< "$idleNodes"`" ] && [ "`state $num`" == "R" ]; then
 				setState $num D
+				sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleting"
+				sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleting"
 				echo "Deleting NAMESCHEME$num"
 				echo Y | gcloud compute instances delete NAMESCHEME$num &> /dev/null &
 				break
