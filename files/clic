@@ -73,6 +73,10 @@ mainLoop() {
 					sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
 					setState $node ""
 				fi
+			elif [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ]; then
+				# Google says the node is up, but Slurm can't contact it
+				echo "ERROR: Node NAMESCHEME$node is unresponsive" | tee -a $LOGFILE
+				deleteInstance $node
 			elif [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
 				# Node is running
 				if [ "`state $node`" == "C" ]; then
@@ -109,7 +113,7 @@ uptime() {
 }
 
 numIdle() {
-	num="`sinfo -h -r -o %A | cut -d '/' -f 2`"	
+	local num="`sinfo -h -r -o %A | cut -d '/' -f 2`"	
 	if [ -z "$num" ]; then
 		echo 0
 	else
@@ -126,18 +130,18 @@ googleReportedUp() {
 }
 
 state() {
-	node="`echo $1 | sed 's/^0*//'`"
+	local node="`echo $1 | sed 's/^0*//'`"
 	echo ${nodes[$node]} | awk '{print $1}'
 }
 
 timeInState() {
-	node="`echo $1 | sed 's/^0*//'`"
+	local node="`echo $1 | sed 's/^0*//'`"
 	expr `uptime` - `echo ${nodes[$node]} | awk '{print $2}'`
 }
 
 setState() {
-	node="`echo $1 | sed 's/^0*//'`"
-	state="$2"
+	local node="`echo $1 | sed 's/^0*//'`"
+	local state="$2"
 	if [ -n "$state" ]; then
 		nodes[$node]="$state `uptime`"
 	else
@@ -146,9 +150,11 @@ setState() {
 }
 
 create() {
-	numToCreate=$1
+	local numToCreate=$1
 	# Determine the next node name to use
+	local i
 	for i in `seq 1 $numToCreate`; do
+		local num
 		for num in $(seq -w 1 $MAX_NODE_NUM); do
 			if [ -z "`state $num`" ]; then
 				setState $num C
@@ -163,20 +169,28 @@ create() {
 }
 
 delete() {
-	numToDelete=$1
-	idleNodes="`sinfo -o "%t %n" | grep "idle" | awk '{print $2}'`"
+	local numToDelete=$1
+	local idleNodes="`sinfo -o "%t %n" | grep "idle" | awk '{print $2}'`"
+	local i
 	for i in `seq 1 $numToDelete`; do
+		local num
 		for num in $(seq -w 1 $MAX_NODE_NUM); do
 			if [ -n "`grep "NAMESCHEME$num" <<< "$idleNodes"`" ] && [ "`state $num`" == "R" ]; then
-				setState $num D
-				sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleting"
-				sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleting"
-				echo "Deleting NAMESCHEME$num" | tee -a $LOGFILE
-				echo Y | gcloud compute instances delete NAMESCHEME$num &> /dev/null &
+				deleteInstance $num
 				break
 			fi
 		done
 	done
+}
+
+deleteInstance() {
+	local num=$1
+	setState $num D
+	sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleting"
+	sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleting"
+	echo "Deleting NAMESCHEME$num" | tee -a $LOGFILE
+	echo Y | gcloud compute instances delete NAMESCHEME$num &> /dev/null &
+
 }
 
 if [ "`hostname`" == "NAMESCHEME" ]; then
