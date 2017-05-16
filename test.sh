@@ -1,27 +1,41 @@
 #!/bin/bash
 
-echo "time jobsQueued jobsRunning nodesUp" > out
+rand() {
+	floor=$1
+	ceil=$2
+	num=$RANDOM #Pseudorandom value
+	let "num %= $ceil - $floor + 1"
+	let "num += $floor"
+	echo "$num"
+}
 
-cat > job.sh << EOF
-#!/bin/bash
-echo "Starting"
-sleep 10
-echo "Done"
-EOF
-
-for i in `seq 1 10`; do
-        qsub job.sh
-done
-
-sleep 10
+execute() {
+	numJobs=$1
+	timePerJob=$2
+	cat > job.sh <<-EOF
+	#!/bin/bash
+	echo "Starting"
+	sleep $timePerJob
+	echo "Done"
+	EOF
+	while [ "$numJobs" -gt 0 ]; do
+		let "numJobs -= 1"
+		qsub job.sh
+	done
+}
 
 uptime() {
         cat /proc/uptime | awk '{print $1}' | cut -d '.' -f 1 # In seconds, rounded down
 }
 
 startTime=`uptime`
-
+echo "time jobsQueued jobsRunning nodesUp" > out
+touch addingJobs
 while :; do
+	if [ -e addingJobs ]; then
+		execute `rand 0 5` `rand 10 100` #Add 0-5 sleep 10-100 jobs to the queue
+	fi
+        sleep 10
         rCount=`qstat -r | tail -n+6 | wc -l`
         qCount=`qstat -i | tail -n+6 | wc -l`
         nodesUp=`gcloud compute instances list | tail -n+3 | wc -l`
@@ -30,5 +44,4 @@ while :; do
         if [ $qCount -eq 0 ] && [ $rCount -eq 0 ] && [ $nodesUp -eq 0 ]; then
                 break
         fi
-        sleep 10
 done
