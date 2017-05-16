@@ -28,7 +28,7 @@ mainLoop() {
 			if [ -z ${job[$jobNum]} ]; then job[$jobNum]=0; fi
 			job[$jobNum]=`expr ${job[$jobNum]} + $SLEEP_TIME`
 			# Determine if we need another node
-			if [[ "$nodesBooting" == 0 && ( "${job[$jobNum]}" > "$TWIDDLE_TIME" || "$nodesUp" == 0 ) ]]; then
+			if [[ "$nodesBooting" -eq 0 && ( "${job[$jobNum]}" -gt "$TWIDDLE_TIME" || "$nodesUp" -eq 0 ) ]]; then
 				nodesWanted=`expr $nodesWanted + 1`
 			fi
 		done
