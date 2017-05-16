@@ -65,10 +65,13 @@ mainLoop() {
 		for node in $(seq -w 1 $MAX_NODE_NUM); do
 			if [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
 				# Slurm thinks the node is up, but Google doesn't.
-				echo "WARNING: Node NAMESCHEME$node went down"
-				sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleted"
-				sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
-				setState $node ""
+				if [ -n "`state $node`" ]; then
+					# We thought it was up, too
+					echo "WARNING: Node NAMESCHEME$node went down"
+					sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleted"
+					sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
+					setState $node ""
+				fi
 			elif [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
 				# Node is running
 				if [ "`state $node`" == "C" ]; then
