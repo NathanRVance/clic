@@ -18,7 +18,7 @@ mainLoop() {
 		for node in $(seq -w 1 $MAX_NODE_NUM); do
 			if [ "`state $node`" == "R" ]; then
 				nodesUp=`expr $nodesUp + 1`
-			elif [[ `state $node` == "C" || ( `state $node` == "R" && `timeInState $node` < $TWIDDLE_TIME ) ]] ; then
+			elif [ `state $node` == "C" ] ; then
 				nodesBooting=`expr $nodesBooting + 1`
 			fi
 		done
@@ -36,9 +36,12 @@ mainLoop() {
 			nodesWanted=1
 		fi
 
-		echo "Nodes wanted: $nodesWanted, Nodes up: $nodesUp, Nodes booting: $nodesBooting"
+		nodesIdle=`numIdle`
+		echo "Nodes wanted: $nodesWanted, Nodes up: $nodesUp, Nodes idle: $nodesIdle Nodes booting: $nodesBooting"
 		# Check that the nodes wanted aren't currently booting (nodesWanted + jobsRunning > nodesUp)
 		nodesWanted=$((($nodesWanted - $nodesBooting + 1) / 2))
+		if [ $nodesWanted -gt 10 ]; then nodesWanted=10; fi #cap it at 10
+		nodesWanted=$(($nodesWanted - $nodesIdle))
 		create $nodesWanted
 
 		# Check for nodes to delete
