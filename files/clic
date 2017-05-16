@@ -33,7 +33,7 @@ mainLoop() {
 			fi
 		done
 		nodesIdle=`numIdle`
-		echo "Nodes wanted: $nodesWanted, Nodes up: $nodesUp, Nodes idle: $nodesIdle Nodes booting: $nodesBooting" | tee -a $LOGFILE
+		echo "`date +%H:%M:%S` Nodes wanted: $nodesWanted, Nodes up: $nodesUp, Nodes idle: $nodesIdle Nodes booting: $nodesBooting" | tee -a $LOGFILE
 		# Check that the nodes wanted aren't currently booting (nodesWanted + jobsRunning > nodesUp)
 		nodesWanted=$((($nodesWanted - $nodesBooting + 1) / 2))
 		if [ $nodesWanted -gt 10 ]; then nodesWanted=10; fi #cap it at 10
