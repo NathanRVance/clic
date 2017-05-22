@@ -3,7 +3,7 @@
 # NAMESCHEME is the name of the head node, and all NAMESCHEMEXX are compute nodes.
 
 LOGFILE="/var/log/clic.log"
-TWIDDLE_TIME=20
+TWIDDLE_TIME=15
 SLEEP_TIME=10
 MAX_NODE_NUM=99
 
@@ -153,7 +153,7 @@ updateIP() {
 	local node="`echo $1 | sed 's/^0*//'`"
 	local ip="`ping -c 1 NAMESCHEME$1 | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
 	if [ -n "${ips[$node]}" ] && [ "$ip" != "${ips[$node]}" ]; then
-		echo "WARNING: IP for NAMESCHEME$num changed, restarting slurmctld..." | tee -a $LOGFILE
+		echo "WARNING: IP for NAMESCHEME$1 changed, restarting slurmctld..." | tee -a $LOGFILE
 		sudo systemctl restart slurmctld.service
 		unset $ip
 	fi
