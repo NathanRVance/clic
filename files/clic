@@ -74,7 +74,7 @@ mainLoop() {
 					echo "Node NAMESCHEME$node went down" | tee -a $LOGFILE
 				fi
 				# In either case, it's gone now
-				sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
+				sudo scontrol update nodename=NAMESCHEME$node state=down reason="Deleted"
 				setState $node "" 
 			elif [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ] && [ "`state $node`" != "D" ] && [ "`state $node`" != "C" ]; then
 				# Google says the node is up, but Slurm can't contact it, and we aren't deleting it
@@ -88,14 +88,14 @@ mainLoop() {
 				elif [ -z "`state $node`" ]; then
 					# Node isn't registered. Maybe the script was restarted?
 					echo "ERROR: Encountered unregistered node NAMESCHEME$node, subsuming into cluster" | tee -a $LOGFILE
-					sudo scontrol update nodename=NAMESCHEME$num state=resume
+					sudo scontrol update nodename=NAMESCHEME$node state=resume
 					setState $node R
 				fi
 			elif [ "`state $node`" == "C" ] && [ "`timeInState $node`" -gt 200 ]; then
 				# In create state, and taking way too long. Chances are the disk was already created, so we should delete that
 				echo "ERROR: Node NAMESCHEME$node hung on boot" | tee -a $LOGFILE
-				echo Y | gcloud compute disks delete NAMESCHEME$num &> /dev/null &
-				setState $node ""
+				echo Y | gcloud compute disks delete NAMESCHEME$node &> /dev/null &
+				deleteInstance $node
 			fi
 		done
 		
