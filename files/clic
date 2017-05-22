@@ -62,21 +62,20 @@ mainLoop() {
 		# C=creating, R=running, D=deleting
 		# Null string for deleted nodes
 		nodenamesUp=`upNodes` # As reported by slurm
-		googleReported=`googleReportedUp` # Nodes we think are up that aren't included here aren't actually up
+		googleReported=`googleReportedUp` # Nodes that we think are up and aren't included here aren't actually up
 		for node in $(seq -w 1 $MAX_NODE_NUM); do
 			if [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
 				# Slurm thinks the node is up, but Google doesn't.
 				if [ "`state $node`" == "R" ] || [ "`state $node`" == "C" ]; then
 					# That deletion was unexpected.
 					echo "ERROR: Node NAMESCHEME$node deleted outside of clic!" | tee -a $LOGFILE
-					sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleted"
-					sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
 				elif [ "`state $node`" == "D" ]; then
 					# We meant to do that
 					echo "Node NAMESCHEME$node went down" | tee -a $LOGFILE
-					sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
 				fi
-				setState $node "" # In either case, it's gone now
+				# In either case, it's gone now
+				sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
+				setState $node "" 
 			elif [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ] && [ "`state $node`" != "D" ] && [ "`state $node`" != "C" ]; then
 				# Google says the node is up, but Slurm can't contact it, and we aren't deleting it
 				echo "ERROR: Node NAMESCHEME$node is unresponsive" | tee -a $LOGFILE
@@ -167,7 +166,8 @@ create() {
 				sudo scontrol update nodename=NAMESCHEME$num state=resume
 				echo "Creating NAMESCHEME$num" | tee -a $LOGFILE
 				gcloud compute disks create NAMESCHEME$num --size 10 --source-snapshot NAMESCHEME &> /dev/null &&
-				gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes"; if [ $? -eq 1 ]; then echo "ERROR: Failed to create NAMESCHEME$num" | tee -a $LOGFILE; fi &> /dev/null & #TODO: do something about the failure
+				gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes" &> /dev/null ||
+				if [ $? -eq 1 ]; then echo "ERROR: Failed to create NAMESCHEME$num" | tee -a $LOGFILE; fi & #TODO: do something about the failure
 				let "numToCreate -= 1"
 			fi
 		fi
@@ -193,7 +193,6 @@ deleteInstance() {
 	local num=$1
 	setState $num D
 	sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleting"
-	sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleting"
 	echo "Deleting NAMESCHEME$num" | tee -a $LOGFILE
 	echo Y | gcloud compute instances delete NAMESCHEME$num &> /dev/null &
 
