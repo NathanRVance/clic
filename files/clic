@@ -153,7 +153,7 @@ create() {
 	# Determine the next node name to use
 	local num
 	for num in $(seq -w 1 $MAX_NODE_NUM); do
-		if [ "$numToCreate" -eq 0 ]; then
+		if [ "$numToCreate" -le 0 ]; then
 			# We're done
 			break
 		elif [ -z "`state $num`" ]; then
