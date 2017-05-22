@@ -153,6 +153,7 @@ updateIP() {
 	local node=$1
 	local ip="`ping -c 1 NAMESCHEME$node | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
 	if [ -n "${ips[$node]}" ] && [ "$ip" != "${ips[$node]}" ]; then
+		echo "WARNING: IP for NAMESCHEME$num changed, restarting slurmctld..." | tee -a $LOGFILE
 		sudo systemctl restart slurmctld.service
 	fi
 	ips[$node]=$ip
@@ -226,7 +227,7 @@ if [ "`hostname`" == "NAMESCHEME" ]; then
 	sudo touch $LOGFILE
 	sudo chown `whoami`:`whoami` $LOGFILE
         echo "Starting slurmctld.service" | tee -a $LOGFILE
-        systemctl start slurmctld.service
+        systemctl restart slurmctld.service
 	zone=`gcloud compute instances list | grep "$(hostname) " | awk '{print $2}'`
 	echo "Configuring gcloud for zone: $zone" | tee -a $LOGFILE
 	gcloud config set compute/zone $zone
