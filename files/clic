@@ -184,8 +184,8 @@ delete() {
 			# We're done
 			break
 		elif [ -n "`grep "NAMESCHEME$num" <<< "$idleNodes"`" ] && [ "`state $num`" == "R" ]; then
-			sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleting"
 			setState $num D
+			sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleting"
 			{
 				local n=$num
 				while true; do
