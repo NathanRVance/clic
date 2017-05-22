@@ -1,5 +1,5 @@
 [Unit]
-Description=Start CLIC: CLuster In the Cloud
+Description=CLIC: CLuster In the Cloud
 After=network.target
 
 [Service]

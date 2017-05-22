@@ -2,7 +2,7 @@
 
 rand() {
 	floor=$1
-	ceil=$2
+	ceil=`echo "$floor" | cut -d "-" -f 2`
 	num=$RANDOM #Pseudorandom value
 	let "num %= $ceil - $floor + 1"
 	let "num += $floor"
@@ -28,12 +28,53 @@ uptime() {
         cat /proc/uptime | awk '{print $1}' | cut -d '.' -f 1 # In seconds, rounded down
 }
 
+usage() {
+	echo "Usage:"
+	echo "-c --continuous <iterations>  repeat job submission every 10 seconds <iterations> times"
+	echo "-n <number>                   the number of jobs submitted (X or X-Y for range)"
+	echo "-d <duration>                 the duration of each job (X or X-Y for range)"
+}
+
+CONTINUOUS=1
+NUMBER=10
+DURATION=50
+ARGS=`getopt -n clic-test -o c:n:d: --long continuous: -- "$@"`
+if [ $? != 0 ] ; then
+	usage
+	exit 1
+fi
+eval set -- "$ARGS"
+
+while true; do
+	case $1 in
+		-c | --continuous)
+			CONTINUOUS="$2"
+			shift 2
+			;;
+		-n)
+			NUMBER="$2"
+			shift 2
+			;;
+		-d)
+			DURATION=$2
+			shift 2
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			break
+			;;
+	esac
+done
+
 startTime=`uptime`
 echo "time jobsQueued jobsRunning nodesUp" > out
-touch addingJobs
 while :; do
-	if [ -e addingJobs ]; then
-		execute `rand 0 3` `rand 1 50` #Add 0-3 sleep 1-50 jobs to the queue
+	if [ "$CONTINUOUS" -gt 0 ]; then
+		execute `rand $NUMBER` `rand $DURATION`
+		let "CONTINUOUS -= 1"
 	fi
         sleep 10
         rCount=`qstat -r | tail -n+6 | wc -l`
