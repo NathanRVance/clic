@@ -58,41 +58,41 @@ mainLoop() {
 		fi
 
 		# Book keeping
-		# ID : "<C|R|D> uptime when state was entered"
+		# States : <C|R|D>
 		# C=creating, R=running, D=deleting
 		# Null string for deleted nodes
 		nodenamesUp=`upNodes` # As reported by slurm
 		googleReported=`googleReportedUp` # Nodes that we think are up and aren't included here aren't actually up
 		for node in $(seq -w 1 $MAX_NODE_NUM); do
-			if [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
-				# Slurm thinks the node is up, but Google doesn't.
-				if [[ "`state $node`" == "R" || ( "`state $node`" == "C" && "`timeInState $node`" -gt 100 ) ]]; then
-					# That deletion was unexpected.
-					echo "ERROR: Node NAMESCHEME$node deleted outside of clic!" | tee -a $LOGFILE
-				elif [ "`state $node`" == "D" ]; then
-					# We meant to do that
-					echo "Node NAMESCHEME$node went down" | tee -a $LOGFILE
-				fi
-				# In either case, it's gone now
+			# Routine stuff
+			if [ "`state $node`" == "C" ] && [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
+				# Node was creating, now is running
+				echo "Node NAMESCHEME$node is up" | tee -a $LOGFILE
+				setState $node R
+			elif [ "`state $node`" == "D" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
+				# Node was deleting, now is gone
+				echo "Node NAMESCHEME$node went down" | tee -a $LOGFILE
 				sudo scontrol update nodename=NAMESCHEME$node state=down reason="Deleted"
-				setState $node "" 
+				setState $node ""
+			fi
+			
+			# Error conditions
+			if [ "`state $node`" == "R" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
+				# We think the node is running, but Google doesn't
+				echo "ERROR: Node NAMESCHEME$node deleted outside of clic!" | tee -a $LOGFILE
+				sudo scontrol update nodename=NAMESCHEME$node state=down reason="Error"
+				setState $node ""
 			elif [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ] && [ "`state $node`" != "D" ] && [ "`state $node`" != "C" ]; then
 				# Google says the node is up, but Slurm can't contact it, and we aren't deleting it
 				echo "ERROR: Node NAMESCHEME$node is unresponsive" | tee -a $LOGFILE
 				deleteInstance $node
-			elif [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
-				# Node is running
-				if [ "`state $node`" == "C" ]; then
-					# Node was creating
-					setState $node R
-				elif [ -z "`state $node`" ]; then
-					# Node isn't registered. Maybe the script was restarted?
-					echo "ERROR: Encountered unregistered node NAMESCHEME$node, subsuming into cluster" | tee -a $LOGFILE
-					sudo scontrol update nodename=NAMESCHEME$node state=resume
-					setState $node R
-				fi
+			elif [ -z "`state $node`" ] && [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
+				# Node is running, but isn't registered. Maybe the script was restarted?
+				echo "ERROR: Encountered unregistered node NAMESCHEME$node, subsuming into cluster" | tee -a $LOGFILE
+				sudo scontrol update nodename=NAMESCHEME$node state=resume
+				setState $node R
 			elif [ "`state $node`" == "C" ] && [ "`timeInState $node`" -gt 200 ]; then
-				# In create state, and taking way too long. Chances are the disk was already created, so we should delete that
+				# In create state, and taking way too long
 				echo "ERROR: Node NAMESCHEME$node hung on boot" | tee -a $LOGFILE
 				echo Y | gcloud compute disks delete NAMESCHEME$node &> /dev/null &
 				deleteInstance $node
