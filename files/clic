@@ -156,7 +156,7 @@ create() {
 				sudo scontrol update nodename=NAMESCHEME$num state=resume
 				echo "Creating NAMESCHEME$num" | tee -a $LOGFILE
 				gcloud compute disks create NAMESCHEME$num --size 10 --source-snapshot NAMESCHEME &> /dev/null &&
-				gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes"; \ 
+				gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes" \ 
 			        if [ $? -eq 1 ]; then echo "ERROR: Failed to create NAMESCHEME$num"; fi &> /dev/null & #TODO: do something about the failure
 				break
 			fi
