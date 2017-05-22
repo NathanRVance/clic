@@ -151,10 +151,11 @@ setState() {
 
 updateIP() {
 	local node="`echo $1 | sed 's/^0*//'`"
-	local ip="`ping -c 1 NAMESCHEME$node | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
+	local ip="`ping -c 1 NAMESCHEME$1 | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
 	if [ -n "${ips[$node]}" ] && [ "$ip" != "${ips[$node]}" ]; then
 		echo "WARNING: IP for NAMESCHEME$num changed, restarting slurmctld..." | tee -a $LOGFILE
 		sudo systemctl restart slurmctld.service
+		unset $ip
 	fi
 	ips[$node]=$ip
 }
