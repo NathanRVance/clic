@@ -69,6 +69,7 @@ mainLoop() {
 				# Node was creating, now is running
 				echo "Node NAMESCHEME$node is up" | tee -a $LOGFILE
 				setState $node R
+				updateIP $node # If the node's ip address changed, then slurm needs to be restarted
 			elif [ "`state $node`" == "D" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
 				# Node was deleting, now is gone
 				echo "Node NAMESCHEME$node went down" | tee -a $LOGFILE
@@ -146,6 +147,15 @@ setState() {
 	else
 		nodes[$node]=""
 	fi
+}
+
+updateIP() {
+	local node=$1
+	local ip="`ping -c 1 NAMESCHEME$node | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
+	if [ -n "${ips[$node]}" ] && [ "$ip" != "${ips[$node]}" ]; then
+		sudo systemctl restart slurmctld.service
+	fi
+	ips[$node]=$ip
 }
 
 create() {
