@@ -65,11 +65,11 @@ mainLoop() {
 		googleReported=`googleReportedUp` # Nodes that we think are up and aren't included here aren't actually up
 		for node in $(seq -w 1 $MAX_NODE_NUM); do
 			# Routine stuff
-			if [ "`state $node`" == "C" ] && [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
+			if [ "`state $node`" == "C" ] && [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ]; then
 				# Node was creating, now is running
 				echo "Node NAMESCHEME$node is up" | tee -a $LOGFILE
 				setState $node R
-			elif [ "`state $node`" == "D" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
+			elif [ "`state $node`" == "D" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
 				# Node was deleting, now is gone
 				echo "Node NAMESCHEME$node went down" | tee -a $LOGFILE
 				sudo scontrol update nodename=NAMESCHEME$node state=down reason="Deleted"
