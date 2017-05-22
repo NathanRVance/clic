@@ -82,8 +82,8 @@ mainLoop() {
 				echo "ERROR: Node NAMESCHEME$node deleted outside of clic!" | tee -a $LOGFILE
 				sudo scontrol update nodename=NAMESCHEME$node state=down reason="Error"
 				setState $node ""
-			elif [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ] && [ "`state $node`" != "D" ] && [ "`state $node`" != "C" ]; then
-				# Google says the node is up, but Slurm can't contact it, and we aren't deleting it
+			elif [ "`state $node`" == "R" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ]; then
+				# We think it should be running, and so does Google, but Slurm doesn't
 				echo "ERROR: Node NAMESCHEME$node is unresponsive" | tee -a $LOGFILE
 				deleteInstance $node
 			elif [ -z "`state $node`" ] && [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ]; then
