@@ -155,7 +155,7 @@ updateIP() {
 	if [ -n "${ips[$node]}" ] && [ "$ip" != "${ips[$node]}" ]; then
 		echo "WARNING: IP for NAMESCHEME$1 changed, restarting slurmctld..." | tee -a $LOGFILE
 		sudo systemctl restart slurmctld.service
-		unset $ip
+		unset ips
 	fi
 	ips[$node]=$ip
 }
