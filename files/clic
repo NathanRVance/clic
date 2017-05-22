@@ -66,13 +66,17 @@ mainLoop() {
 		for node in $(seq -w 1 $MAX_NODE_NUM); do
 			if [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
 				# Slurm thinks the node is up, but Google doesn't.
-				if [ -n "`state $node`" ]; then
-					# We thought it was up, too
-					echo "WARNING: Node NAMESCHEME$node went down" | tee -a $LOGFILE
+				if [ "`state $node`" == "R" ] || [ "`state $node`" == "C" ]; then
+					# That deletion was unexpected.
+					echo "ERROR: Node NAMESCHEME$node deleted outside of clic!" | tee -a $LOGFILE
 					sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleted"
 					sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
-					setState $node ""
+				elif [ "`state $node`" == "D" ]; then
+					# We meant to do that
+					echo "Node NAMESCHEME$node went down" | tee -a $LOGFILE
+					sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
 				fi
+				setState $node "" # In either case, it's gone now
 			elif [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ] && [ "`state $node`" != "D" ] && [ "`state $node`" != "C" ]; then
 				# Google says the node is up, but Slurm can't contact it, and we aren't deleting it
 				echo "ERROR: Node NAMESCHEME$node is unresponsive" | tee -a $LOGFILE
@@ -87,16 +91,7 @@ mainLoop() {
 					echo "ERROR: Encountered unregistered node NAMESCHEME$node, subsuming into cluster" | tee -a $LOGFILE
 					setState $node R
 				fi
-			elif [ "`state $node`" != "C" ]; then
-				# Node was deleted
-				if [ "`state $node`" == "R" ]; then
-					# That deletion was unexpected.
-					echo "ERROR: Node NAMESCHEME$node deleted outside of clic!" | tee -a $LOGFILE
-					sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleted"
-					sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
-				fi
-				setState $node ""
-			elif [ "`timeInState $node`" -gt 200 ]; then
+			elif [ "`state $node`" == "C" ] && [ "`timeInState $node`" -gt 200 ]; then
 				# In create state, and taking way too long. Chances are the disk was already created, so we should delete that
 				echo "ERROR: Node NAMESCHEME$node hung on boot" | tee -a $LOGFILE
 				echo Y | gcloud compute disks delete NAMESCHEME$num &> /dev/null &
@@ -161,7 +156,8 @@ create() {
 				sudo scontrol update nodename=NAMESCHEME$num state=resume
 				echo "Creating NAMESCHEME$num" | tee -a $LOGFILE
 				gcloud compute disks create NAMESCHEME$num --size 10 --source-snapshot NAMESCHEME &> /dev/null &&
-				gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes" &> /dev/null &
+				gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes"; \ 
+			        if [ $? -eq 1 ]; then echo "ERROR: Failed to create NAMESCHEME$num"; fi &> /dev/null & #TODO: do something about the failure
 				break
 			fi
 		done
