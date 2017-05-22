@@ -124,7 +124,7 @@ googleReportedUp() {
 	gcloud compute instances list | tail -n+2 | awk '{print $1}'	
 }
 
-googleExistingDisks() {
+existingDisks() {
 	gcloud compute disks list | tail -n+2 | awk '{print $1}'
 }
 
@@ -150,26 +150,27 @@ setState() {
 
 create() {
 	local numToCreate=$1
-	existingDisks="`googleExistingDisks`"
+	existingDisks="`existingDisks`"
 	# Determine the next node name to use
-	local i
-	for i in `seq 1 $numToCreate`; do
-		local num
-		for num in $(seq -w 1 $MAX_NODE_NUM); do
-			if [ -z "`state $num`" ]; then
+	local num
+	for num in $(seq -w 1 $MAX_NODE_NUM); do
+		if [ "$numToCreate" -eq 0 ]; then
+			# We're done
+			break
+		elif [ -z "`state $num`" ]; then
+			# This node number is unused
+			if [ -n "`grep NAMESCHEME$num <<< $existingDisks`" ]; then
+				echo "ERROR: Disk for NAMESCHEME$num exists, but shouldn't! Deleting..." | tee -a $LOGFILE
+				echo Y | gcloud compute disks delete NAMESCHEME$num &> /dev/null &
+			else
 				setState $num C
 				sudo scontrol update nodename=NAMESCHEME$num state=resume
 				echo "Creating NAMESCHEME$num" | tee -a $LOGFILE
-				if [ -n "`grep NAMESCHEME$num <<< $existingDisks`" ]; then
-					echo "ERROR: Disk for NAMESCHEME$num already exists! Deleting..."
-					echo Y | gcloud compute disks delete NAMESCHEME$num &> /dev/null
-
-				fi
 				gcloud compute disks create NAMESCHEME$num --size 10 --source-snapshot NAMESCHEME &> /dev/null &&
 				gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes"; if [ $? -eq 1 ]; then echo "ERROR: Failed to create NAMESCHEME$num" | tee -a $LOGFILE; fi &> /dev/null & #TODO: do something about the failure
-				break
+				let "numToCreate -= 1"
 			fi
-		done
+		fi
 	done
 }
 
