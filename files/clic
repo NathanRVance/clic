@@ -86,7 +86,7 @@ mainLoop() {
 				# Google says the node is up, but Slurm can't contact it, and we aren't deleting it
 				echo "ERROR: Node NAMESCHEME$node is unresponsive" | tee -a $LOGFILE
 				deleteInstance $node
-			elif [ -z "`state $node`" ] && [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
+			elif [ -z "`state $node`" ] && [ -n "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -n "`grep NAMESCHEME$node <<< $googleReported`" ]; then
 				# Node is running, but isn't registered. Maybe the script was restarted?
 				echo "ERROR: Encountered unregistered node NAMESCHEME$node, subsuming into cluster" | tee -a $LOGFILE
 				sudo scontrol update nodename=NAMESCHEME$node state=resume
