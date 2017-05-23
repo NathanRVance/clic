@@ -33,7 +33,7 @@ mainLoop() {
 			fi
 		done
 		nodesIdle=`numIdle`
-		echo "`date +%H:%M:%S` Nodes wanted: $nodesWanted, Nodes up: $nodesUp, Nodes idle: $nodesIdle Nodes booting: $nodesBooting" | tee -a $LOGFILE
+		echo "Nodes wanted: $nodesWanted, Nodes up: $nodesUp, Nodes idle: $nodesIdle Nodes booting: $nodesBooting" | tee -a $LOGFILE
 		# Check that the nodes wanted aren't currently booting (nodesWanted + jobsRunning > nodesUp)
 		nodesWanted=$((($nodesWanted - $nodesBooting + 1) / 2))
 		if [ $nodesWanted -gt 10 ]; then nodesWanted=10; fi #cap it at 10
@@ -128,11 +128,11 @@ upNodes() {
 }
 
 googleReportedUp() {
-	gcloud compute instances list | tail -n+2 | awk '{print $1}'	
+	gcloud compute instances list | tail -n+3 | awk '{print $1}'	
 }
 
 existingDisks() {
-	gcloud compute disks list | tail -n+2 | awk '{print $1}'
+	gcloud compute disks list | tail -n+3 | awk '{print $1}'
 }
 
 state() {
