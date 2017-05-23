@@ -1,8 +1,8 @@
 #!/bin/bash
 
 rand() {
-	floor=$1
-	ceil=`echo "$floor" | cut -d "-" -f 2`
+	floor=`echo "$1" | cut -d "-" -f 1`
+	ceil=`echo "$1" | cut -d "-" -f 2`
 	num=$RANDOM #Pseudorandom value
 	let "num %= $ceil - $floor + 1"
 	let "num += $floor"
