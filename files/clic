@@ -98,6 +98,7 @@ mainLoop() {
 				echo "ERROR: Encountered unregistered node NAMESCHEME$node, subsuming into cluster" | tee -a $LOGFILE
 				sudo scontrol update nodename=NAMESCHEME$node state=resume
 				setState $node R
+				updateIP $node
 			elif [ "`state $node`" == "C" ] && [ "`timeInState $node`" -gt 200 ]; then
 				# In create state, and taking way too long
 				echo "ERROR: Node NAMESCHEME$node hung on boot" | tee -a $LOGFILE
