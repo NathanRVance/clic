@@ -36,19 +36,18 @@ mainLoop() {
 		echo "Nodes wanted: $nodesWanted, Nodes up: $nodesUp, Nodes idle: $nodesIdle Nodes booting: $nodesBooting" | tee -a $LOGFILE
 		# Check that the nodes wanted aren't currently booting (nodesWanted + jobsRunning > nodesUp)
 		nodesWanted=$((($nodesWanted - $nodesBooting + 1) / 2))
-		if [ $nodesWanted -gt 10 ]; then nodesWanted=10; fi #cap it at 10
+		#if [ $nodesWanted -gt 10 ]; then nodesWanted=10; fi #cap it at 10
 		nodesWanted=$(($nodesWanted - $nodesIdle))
 		create $nodesWanted
 
 		# Check for nodes to delete
-		numIdle=`numIdle`
-		if [ -z "$qJobs" ] && [ "$numIdle" -gt "0" ]; then
+		if [ "$nodesIdle" -gt "0" ]; then
 			# Node(s) sit idle...
 			if [ -z "$emptyTime" ]; then
 				emptyTime=`uptime`
 			elif [ "$(expr $(uptime) - $emptyTime)" -gt "$TWIDDLE_TIME" ]; then
 				# ...and have sat idle for some time
-				numToDelete=$((($numIdle + 1) / 2))
+				numToDelete=$((($nodesIdle + 1) / 2))
 				delete $numToDelete
 				emptyTime=""
 			fi
