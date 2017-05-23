@@ -76,6 +76,12 @@ mainLoop() {
 				sudo scontrol update nodename=NAMESCHEME$node state=down reason="Deleted"
 				setState $node ""
 			fi
+
+			# Error avoidance
+			if [ -n "`grep NAMESCHEME$node <<< $googleReported`" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
+				# Set the node to be resumed once again in slurm
+				sudo scontrol update nodename=NAMESCHEME$node state=resume
+			fi
 			
 			# Error conditions
 			if [ "`state $node`" == "R" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
@@ -240,7 +246,7 @@ else
         #echo "NAMESCHEME:/home                 /home                   nfs     rw,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
         sudo mount NAMESCHEME:/etc/slurm /etc/slurm --ro
         sudo mount NAMESCHEME:/etc/munge /etc/munge --ro
-	sudo mount NAMESCHEME:/home /home --rw
+	#sudo mount NAMESCHEME:/home /home --rw
         echo "Starting slurmd.service"
         systemctl start slurmd.service
 fi
