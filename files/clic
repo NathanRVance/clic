@@ -158,13 +158,11 @@ setState() {
 updateIPs() {
 	local needsRestart=""
 	local requeue=""
-	unset newIps
 	local node
 	for node in $(seq -w 1 $MAX_NODE_NUM); do
 		if [ "`state $node`" == "R" ]; then
 			local n="`echo $node | sed 's/^0*//'`"
 			local ip="`ping -c 1 NAMESCHEME$node | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
-			newIps[$n]=$ip
 			if [ -n "${ips[$n]}" ] && [ "$ip" != "${ips[$n]}" ]; then
 				echo "WARNING: IP for NAMESCHEME$node changed" | tee -a $LOGFILE
 				needsRestart="${needsRestart}NAMESCHEME$node "
@@ -173,6 +171,7 @@ updateIPs() {
 				fi
 				requeue="$requeue`squeue -ho "%A %N" | grep NAMESCHEME$node | awk '{print $1}'`"
 			fi
+			ips[$n]=$ip
 		fi
 	done
 	if [ -n "$needsRestart" ]; then
@@ -185,13 +184,9 @@ updateIPs() {
 		done
 		scontrol requeue $requeue
 		for job in `tr "," " " <<< $requeue`; do
-			sudo scontrol update JobID=$job StartTime=now
+			sudo scontrol update JobID=$job StartTime=now+1minutes
 		done
-		unset ips
 	fi
-	for index in ${!newIps[*]}; do
-		ips[$index]=${newIps[$index]}
-	done
 }
 
 create() {
