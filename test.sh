@@ -33,6 +33,7 @@ usage() {
 	echo "-c --continuous <iterations>  repeat job submission every 10 seconds <iterations> times"
 	echo "-n <number>                   the number of jobs submitted (X or X-Y for range)"
 	echo "-d <duration>                 the duration of each job (X or X-Y for range)"
+	echo "-h                            print this help message and exit"
 }
 
 CONTINUOUS=1
