@@ -268,7 +268,9 @@ else
         #echo "NAMESCHEME:/home                 /home                   nfs     rw,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
         #sudo mount NAMESCHEME:/etc/slurm /etc/slurm --ro
         #sudo mount NAMESCHEME:/etc/munge /etc/munge --ro
-	#sudo mount NAMESCHEME:/home /home --rw
-        echo "Starting slurmd.service"
+	sudo mount --bind /home/nathan/.ssh /.ssh
+	sudo mount clic:/home /home --rw
+	sudo mount --bind /.ssh /home/nathan/.ssh
+	echo "Starting slurmd.service"
         systemctl start slurmd.service
 fi

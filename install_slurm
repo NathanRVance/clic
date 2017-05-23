@@ -59,3 +59,6 @@ echo -e "\nDisabling knownhost checking:"
 echo "StrictHostKeyChecking no
 UserKnownHostsFile=/dev/null
 LogLevel error" | sudo tee --append /etc/ssh/ssh_config
+# So that nodes can still access ~/.ssh when /home is mounted, there must be another mountpoint to bind it to.
+mkdir /.ssh
+chown `whoami`:`whoami` /.ssh
