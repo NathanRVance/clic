@@ -184,6 +184,9 @@ updateIPs() {
 			sudo su USER -c "ssh $nodeName sudo systemctl restart slurmd" &
 		done
 		scontrol requeue $requeue
+		for job in `tr "," " " <<< $requeue`; do
+			sudo scontrol update JobID=$job StartTime=now
+		done
 		unset ips
 	fi
 	for index in ${!newIps[*]}; do
