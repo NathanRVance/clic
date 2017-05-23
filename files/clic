@@ -78,10 +78,10 @@ mainLoop() {
 			fi
 
 			# Error avoidance
-			if [ -n "`grep NAMESCHEME$node <<< $googleReported`" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
-				# Set the node to be resumed once again in slurm
-				sudo scontrol update nodename=NAMESCHEME$node state=resume
-			fi
+			#if [ -n "`grep NAMESCHEME$node <<< $googleReported`" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
+			#	# Set the node to be resumed once again in slurm
+			#	sudo scontrol update nodename=NAMESCHEME$node state=resume
+			#fi
 			
 			# Error conditions
 			if [ "`state $node`" == "R" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
@@ -156,11 +156,30 @@ setState() {
 }
 
 updateIP() {
-	local node="`echo $1 | sed 's/^0*//'`"
-	local ip="`ping -c 1 NAMESCHEME$1 | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
+	local fullNum=$1
+	local node="`echo $fullNum | sed 's/^0*//'`"
+	local ip="`ping -c 1 NAMESCHEME$fullNum | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
+	local needsRestart=false
 	if [ -n "${ips[$node]}" ] && [ "$ip" != "${ips[$node]}" ]; then
-		echo "WARNING: IP for NAMESCHEME$1 changed, restarting slurmctld..." | tee -a $LOGFILE
+		echo "WARNING: IP for NAMESCHEME$fullNum changed, restarting slurmctld..." | tee -a $LOGFILE
+		needsRestart=true
+	else
+		ips[$node]=""
+		local num
+		for num in $(seq 1 $MAX_NODE_NUM); do
+			if [ "$ip" == "${ips[$num]}" ]; then
+				echo "WARNING: IP for NAMESCHEME$fullNum conflicts, restarting slurmctld..." | tee -a $LOGFILE
+				needsRestart=true
+			fi
+		done
+	fi
+	if [ "$needsRestart" == "true" ]; then
 		sudo systemctl restart slurmctld.service
+		#Up nodes may have changed, so obtain a fresh copy from google rather than relying on the state function
+		for nodeName in `googleReportedUp`; do
+			echo "WARNING: Restarting slurmd on $nodeName" | tee -a $LOGFILE
+			ssh $nodeName sudo systemctl restart slurmd &
+		done
 		unset ips
 	fi
 	ips[$node]=$ip

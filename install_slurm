@@ -51,3 +51,11 @@ echo -e "\n/etc/exports:"
 cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
 sudo systemctl enable nfs
 sudo systemctl start nfs
+
+# Set up passwordless ssh between nodes
+echo | ssh-keygen -N ""
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+echo -e "\nDisabling knownhost checking:"
+echo "StrictHostKeyChecking no
+UserKnownHostsFile=/dev/null
+LogLevel error" | sudo tee --append /etc/ssh/ssh_config
