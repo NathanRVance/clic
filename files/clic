@@ -160,9 +160,11 @@ updateIP() {
 	local node="`echo $fullNum | sed 's/^0*//'`"
 	local ip="`ping -c 1 NAMESCHEME$fullNum | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
 	local needsRestart=false
+	local requeue=""
 	if [ -n "${ips[$node]}" ] && [ "$ip" != "${ips[$node]}" ]; then
 		echo "WARNING: IP for NAMESCHEME$fullNum changed, restarting slurmctld..." | tee -a $LOGFILE
 		needsRestart=true
+		requeue=`squeue -ho "%A %N" | grep NAMESCHEME$fullNum | awk '{print $1}'`
 	else
 		ips[$node]=""
 		local num
@@ -180,6 +182,9 @@ updateIP() {
 			echo "WARNING: Restarting slurmd on $nodeName" | tee -a $LOGFILE
 			sudo su USER -c "ssh $nodeName sudo systemctl restart slurmd" &
 		done
+		if [ -n "$requeue" ]; then
+			scontrol requeue $requeue
+		fi
 		unset ips
 	fi
 	ips[$node]=$ip
