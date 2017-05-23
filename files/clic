@@ -69,7 +69,6 @@ mainLoop() {
 				# Node was creating, now is running
 				echo "Node NAMESCHEME$node is up" | tee -a $LOGFILE
 				setState $node R
-				updateIP $node # If the node's ip address changed, then slurm needs to be restarted
 			elif [ "`state $node`" == "D" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
 				# Node was deleting, now is gone
 				echo "Node NAMESCHEME$node went down" | tee -a $LOGFILE
@@ -98,7 +97,6 @@ mainLoop() {
 				echo "ERROR: Encountered unregistered node NAMESCHEME$node, subsuming into cluster" | tee -a $LOGFILE
 				sudo scontrol update nodename=NAMESCHEME$node state=resume
 				setState $node R
-				updateIP $node
 			elif [ "`state $node`" == "C" ] && [ "`timeInState $node`" -gt 200 ]; then
 				# In create state, and taking way too long
 				echo "ERROR: Node NAMESCHEME$node hung on boot" | tee -a $LOGFILE
@@ -106,6 +104,7 @@ mainLoop() {
 				deleteInstance $node
 			fi
 		done
+		updateIPs $nodenamesUp
 		
 		sleep $SLEEP_TIME
 	done
@@ -156,39 +155,41 @@ setState() {
 	fi
 }
 
-updateIP() {
-	local fullNum=$1
-	local node="`echo $fullNum | sed 's/^0*//'`"
-	local ip="`ping -c 1 NAMESCHEME$fullNum | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
-	local needsRestart=false
+updateIPs() {
+	local nodes=$1
+	local needsRestart=""
 	local requeue=""
-	if [ -n "${ips[$node]}" ] && [ "$ip" != "${ips[$node]}" ]; then
-		echo "WARNING: IP for NAMESCHEME$fullNum changed, restarting slurmctld..." | tee -a $LOGFILE
-		needsRestart=true
-		requeue=`squeue -ho "%A %N" | grep NAMESCHEME$fullNum | awk '{print $1}'`
-	else
-		ips[$node]=""
-		local num
-		for num in $(seq 1 $MAX_NODE_NUM); do
-			if [ "$ip" == "${ips[$num]}" ]; then
-				echo "WARNING: IP for NAMESCHEME$fullNum conflicts, restarting slurmctld..." | tee -a $LOGFILE
-				needsRestart=true
+	unset newIps
+	local node
+	for node in $(seq -w 1 $MAX_NODE_NUM); do
+		if [ -n "`grep NAMESCHEME$node <<< $nodes`" ]; then
+			local n="`echo $node | sed 's/^0*//'`"
+			local ip="`ping -c 1 NAMESCHEME$node | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
+			newIps[$n]=$ip
+			if [ -n "${ips[$n]}" ] && [ "$ip" != "${ips[$n]}" ]; then
+				echo "WARNING: IP for NAMESCHEME$node changed" | tee -a $LOGFILE
+				needsRestart="${needsRestart}NAMESCHEME$node "
+				if [ -n "$requeue" ]; then
+					requeue="$requeue," # Append a comma
+				fi
+				requeue="$requeue`squeue -ho "%A %N" | grep NAMESCHEME$node | awk '{print $1}'`"
 			fi
-		done
-	fi
-	if [ "$needsRestart" == "true" ]; then
+		fi
+	done
+	if [ -n "$needsRestart" ]; then
+		echo "WARNING: restarting slurmctld" | tee -a $LOGFILE
 		sudo systemctl restart slurmctld.service
-		#Up nodes may have changed, so obtain a fresh copy from google rather than relying on the state function
-		for nodeName in `googleReportedUp`; do
+		local nodeName
+		for nodeName in $needsRestart; do
 			echo "WARNING: Restarting slurmd on $nodeName" | tee -a $LOGFILE
 			sudo su USER -c "ssh $nodeName sudo systemctl restart slurmd" &
 		done
-		if [ -n "$requeue" ]; then
-			scontrol requeue $requeue
-		fi
+		scontrol requeue $requeue
 		unset ips
 	fi
-	ips[$node]=$ip
+	for index in ${!newIps[*]}; do
+		ips[$index]=${newIps[$index]}
+	done
 }
 
 create() {
@@ -269,8 +270,8 @@ else
         #echo "NAMESCHEME:/etc/slurm            /etc/slurm              nfs     ro,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
         #echo "NAMESCHEME:/etc/munge            /etc/munge              nfs     ro,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
         #echo "NAMESCHEME:/home                 /home                   nfs     rw,hard,intr    0 0" | sudo tee --append /etc/fstab > /dev/null
-        sudo mount NAMESCHEME:/etc/slurm /etc/slurm --ro
-        sudo mount NAMESCHEME:/etc/munge /etc/munge --ro
+        #sudo mount NAMESCHEME:/etc/slurm /etc/slurm --ro
+        #sudo mount NAMESCHEME:/etc/munge /etc/munge --ro
 	#sudo mount NAMESCHEME:/home /home --rw
         echo "Starting slurmd.service"
         systemctl start slurmd.service
