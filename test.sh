@@ -38,7 +38,7 @@ usage() {
 CONTINUOUS=1
 NUMBER=10
 DURATION=50
-ARGS=`getopt -n clic-test -o c:n:d: --long continuous: -- "$@"`
+ARGS=`getopt -n clic-test -o hc:n:d: --long continuous: -- "$@"`
 if [ $? != 0 ] ; then
 	usage
 	exit 1
@@ -47,6 +47,10 @@ eval set -- "$ARGS"
 
 while true; do
 	case $1 in
+		-h)
+			usage
+			exit 0
+			;;
 		-c | --continuous)
 			CONTINUOUS="$2"
 			shift 2
