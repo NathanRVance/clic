@@ -104,7 +104,7 @@ mainLoop() {
 				deleteInstance $node
 			fi
 		done
-		updateIPs $nodenamesUp
+		updateIPs
 		
 		sleep $SLEEP_TIME
 	done
@@ -156,13 +156,12 @@ setState() {
 }
 
 updateIPs() {
-	local nodes=$1
 	local needsRestart=""
 	local requeue=""
 	unset newIps
 	local node
 	for node in $(seq -w 1 $MAX_NODE_NUM); do
-		if [ -n "`grep NAMESCHEME$node <<< $nodes`" ]; then
+		if [ "`state $node`" == "R" ]; then
 			local n="`echo $node | sed 's/^0*//'`"
 			local ip="`ping -c 1 NAMESCHEME$node | head -n 1 | cut -d "(" -f 2 | cut -d ")" -f 1`"
 			newIps[$n]=$ip
