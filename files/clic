@@ -178,7 +178,7 @@ updateIP() {
 		#Up nodes may have changed, so obtain a fresh copy from google rather than relying on the state function
 		for nodeName in `googleReportedUp`; do
 			echo "WARNING: Restarting slurmd on $nodeName" | tee -a $LOGFILE
-			ssh $nodeName sudo systemctl restart slurmd &
+			sudo su USER -c "ssh $nodeName sudo systemctl restart slurmd" &
 		done
 		unset ips
 	fi
