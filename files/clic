@@ -10,8 +10,8 @@ MAX_NODE_NUM=99
 mainLoop() {
 	while [ "true" ]; do
 		# Queued and running jobs are one line each containing the job number
-		rJobs=`qstat -r | tail -n+6 | awk '{print $1}'`
-		qJobs=`qstat -i | tail -n+6 | awk '{print $1}'`
+		rJobs=`squeue -h -t r,cg,cf -o %A`
+		qJobs=`squeue -h -t pd -o %A`
 
 		nodesWanted=0
 		nodesUp=0
