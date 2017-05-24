@@ -28,6 +28,7 @@ sudo apt -y install libalgorithm-c3-perl libarchive-extract-perl libcgi-fast-per
 VER=`curl -s https://www.schedmd.com/downloads.php | grep -oP 'latest/slurm-.*?.tar.bz2' | head -n 1 | grep -o '\([0-9][0-9]*.\)*' | rev | cut -c 2- | rev`
 cd /tmp
 curl -O https://www.schedmd.com/downloads/latest/slurm-$VER.tar.bz2
+tar xjf slurm-$VER.tar.bz2
 cd slurm-$VER
 ./configure --prefix=/usr --sysconfdir=/etc/slurm
 make
@@ -95,5 +96,5 @@ echo "StrictHostKeyChecking no
 UserKnownHostsFile=/dev/null
 LogLevel error" | sudo tee --append /etc/ssh/ssh_config
 # So that nodes can still access ~/.ssh when /home is mounted, there must be another mountpoint to bind it to.
-mkdir /.ssh
-chown `whoami`:`whoami` /.ssh
+sudo mkdir /.ssh
+sudo chown `whoami`:`whoami` /.ssh
