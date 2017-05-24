@@ -38,14 +38,13 @@ usage() {
 
 CONTINUOUS=1
 NUMBER=10
-DURATION=50
+DURATION=20
 ARGS=`getopt -n clic-test -o hc:n:d: --long continuous: -- "$@"`
 if [ $? != 0 ] ; then
 	usage
 	exit 1
 fi
 eval set -- "$ARGS"
-
 while true; do
 	case $1 in
 		-h)
