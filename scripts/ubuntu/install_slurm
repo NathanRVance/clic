@@ -18,8 +18,8 @@ sudo chown -R munge:munge /etc/munge/ /var/log/munge/
 sudo chmod 0700 /etc/munge/ /var/log/munge/
 
 # Munge yells because /var/log is group writable, but this patch fixes that. Somehow.
-sudo sed -i '&ExecStart=/usr/sbin/munged&ExecStart=/usr/sbin/munged --syslog&' /etc/systemd/system/munge.service
-
+sudo sed -i 's&ExecStart=/usr/sbin/munged&ExecStart=/usr/sbin/munged --syslog&' /lib/systemd/system/munge.service
+sudo systemctl daemon-reload
 sudo systemctl enable munge
 sudo systemctl start munge
 
