@@ -1,7 +1,5 @@
 #!/bin/bash
 
-CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 namescheme=`hostname`
 echo "Using $namescheme as the base name for the cluster"
 

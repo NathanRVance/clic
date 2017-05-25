@@ -1,7 +1,5 @@
 #!/bin/bash
 
-CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 export MUNGEUSER=981
 sudo groupadd -g $MUNGEUSER munge
 sudo useradd  -m -c "MUNGE Uid 'N' Gid Emporium" -d /var/lib/munge -u $MUNGEUSER -g munge  -s /sbin/nologin munge

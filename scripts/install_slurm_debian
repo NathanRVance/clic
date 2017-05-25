@@ -1,7 +1,5 @@
 #!/bin/bash
 
-CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 export MUNGEUSER=981
 sudo groupadd -g $MUNGEUSER munge
 sudo useradd  -m -c "MUNGE Uid 'N' Gid Emporium" -d /var/lib/munge -u $MUNGEUSER -g munge  -s /sbin/nologin munge
@@ -10,7 +8,7 @@ sudo groupadd -g $SLURMUSER slurm
 sudo useradd  -m -c "Slurm workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
 
 echo "Installing munge"
-sudo apt -y install munge libmunge-dev &> /dev/null
+sudo apt -y install munge libmunge2 libmunge-dev &> /dev/null
 
 sudo dd if=/dev/urandom bs=1 count=1024 | sudo tee /etc/munge/munge.key > /dev/null
 sudo chown munge:munge /etc/munge/munge.key
