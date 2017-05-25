@@ -81,8 +81,8 @@ while :; do
 		let "CONTINUOUS -= 1"
 	fi
         sleep 10
-        rCount=`qstat -r | tail -n+6 | wc -l`
-        qCount=`qstat -i | tail -n+6 | wc -l`
+        rCount=`squeue -h -t r,cg,cf -o %A | wc -l`
+        qCount=`squeue -h -t pd -o %A | wc -l`
         nodesUp=`gcloud compute instances list | tail -n+3 | wc -l`
         curTime=$(expr $(uptime) - $startTime)
         echo "$curTime $qCount $rCount $nodesUp" >> out
