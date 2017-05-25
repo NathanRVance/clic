@@ -84,8 +84,6 @@ cat $CLIC_ROOT/files/slurm.conf | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /e
 # Set up exports. Only the head node needs this, but it isn't a problem to have this configured for all nodes.
 echo -e "\n/etc/exports:"
 cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
-sudo systemctl enable nfs-kernel-server 
-sudo systemctl start nfs-kernel-server 
 
 # Set up passwordless ssh between nodes
 echo | ssh-keygen -N ""
