@@ -15,5 +15,5 @@ fi
 
 echo "Installing for $OS"
 
-$CLIC_ROOT/scripts/install_slurm_$OS
+$CLIC_ROOT/scripts/$OS/install_slurm
 $CLIC_ROOT/scripts/install_clic

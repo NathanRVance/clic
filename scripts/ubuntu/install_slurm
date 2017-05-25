@@ -17,11 +17,14 @@ sudo chmod 400 /etc/munge/munge.key
 sudo chown -R munge:munge /etc/munge/ /var/log/munge/
 sudo chmod 0700 /etc/munge/ /var/log/munge/
 
+# Munge yells because /var/log is group writable, but this patch fixes that. Somehow.
+sudo sed -i '&ExecStart=/usr/sbin/munged&ExecStart=/usr/sbin/munged --syslog&' /etc/systemd/system/munge.service
+
 sudo systemctl enable munge
 sudo systemctl start munge
 
 echo "Installing slurm build dependencies"
-sudo apt -y install libalgorithm-c3-perl libarchive-extract-perl libcgi-fast-perl libcgi-pm-perl libclass-c3-perl libclass-c3-xs-perl libcpan-meta-perl libdata-optlist-perl libdata-section-perl libfcgi-perl libhwloc-plugins libhwloc5 liblog-message-perl liblog-message-simple-perl libltdl7 liblua5.1-0 libmodule-build-perl libmodule-pluggable-perl libmodule-signature-perl libmro-compat-perl libmysqlclient18 libnuma1 libpackage-constants-perl libparams-util-perl libpciaccess0 libpod-latex-perl libpod-readme-perl libregexp-common-perl libsoftware-license-perl libsub-exporter-perl libsub-install-perl libterm-ui-perl libtext-soundex-perl libtext-template-perl libxml2 mysql-common ocl-icd-libopencl1 openssl-blacklist perl perl-modules rename sgml-base xml-core gcc make bzip2
+sudo apt -y install libalgorithm-c3-perl libarchive-extract-perl libcgi-fast-perl libcgi-pm-perl libclass-c3-perl libclass-c3-xs-perl libcpan-meta-perl libdata-optlist-perl libdata-section-perl libfcgi-perl libhwloc-plugins libhwloc5 liblog-message-perl liblog-message-simple-perl libltdl7 liblua5.1-0 libmodule-build-perl libmodule-pluggable-perl libmodule-signature-perl libmro-compat-perl libmysqlclient20 libnuma1 libpackage-constants-perl libparams-util-perl libpciaccess0 libpod-latex-perl libpod-readme-perl libregexp-common-perl libsoftware-license-perl libsub-exporter-perl libsub-install-perl libterm-ui-perl libtext-soundex-perl libtext-template-perl libxml2 mysql-common ocl-icd-libopencl1 openssl-blacklist perl perl-modules rename sgml-base xml-core gcc make bzip2
 
 VER=`curl -s https://www.schedmd.com/downloads.php | grep -oP 'latest/slurm-.*?.tar.bz2' | head -n 1 | grep -o '\([0-9][0-9]*.\)*' | rev | cut -c 2- | rev`
 cd /tmp
@@ -45,7 +48,7 @@ ExecReload=/bin/kill -HUP \$MAINPID
 PIDFile=/var/run/slurmctld.pid
 
 [Install]
-WantedBy=multi-user.target" | sudo tee /usr/lib/systemd/system/slurmctld.service
+WantedBy=multi-user.target" | sudo tee /etc/systemd/system/slurmctld.service
 
 echo "[Unit]
 Description=Slurm node daemon
@@ -64,7 +67,7 @@ LimitMEMLOCK=infinity
 LimitSTACK=infinity
 
 [Install]
-WantedBy=multi-user.target" | sudo tee /usr/lib/systemd/system/slurmd.service
+WantedBy=multi-user.target" | sudo tee /etc/systemd/system/slurmd.service
 
 sudo mkdir /var/spool/slurmctld /var/log/slurm
 sudo chown slurm: /var/spool/slurmctld /var/log/slurm
