@@ -2,5 +2,18 @@
 
 CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$CLIC_ROOT/install_slurm
-$CLIC_ROOT/install_clic
+if [ -n "`uname -a | grep -i Debian`" ]; then
+   OS="debian"
+elif [ -n "`uname -a | grep -i ubuntu`" ]; then
+   OS="ubuntu"
+elif [ -e "/etc/redhat-release" ]; then
+   OS="centos"
+else
+   echo "Unidentified OS! Exiting."
+   exit
+fi
+
+echo "Installing for $OS"
+
+$CLIC_ROOT/scripts/install_slurm_$OS
+$CLIC_ROOT/scripts/install_clic

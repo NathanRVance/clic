@@ -82,8 +82,8 @@ sudo mkdir /etc/slurm
 sudo chown slurm: /etc/slurm
 
 # Set up exports. Only the head node needs this, but it isn't a problem to have this configured for all nodes.
-sudo apt -y install nfs-kernel-server  &> /dev/null
 echo -e "\n/etc/exports:"
+sudo apt -y install nfs-kernel-server
 cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
 sudo systemctl enable nfs-kernel-server 
 sudo systemctl start nfs-kernel-server 

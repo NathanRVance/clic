@@ -1,5 +1,0 @@
-#!/bin/bash
-
-# Prints space seperated instance short name, num cpus
-
-gcloud compute instances list | sed '1d' | sed "/$(hostname)/d" | awk '{split($3,a,"-"); print $1 " " a[3]}'

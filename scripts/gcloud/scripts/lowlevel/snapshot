@@ -1,6 +1,0 @@
-#!/bin/bash
-
-name=$1
-snapshotName=$2
-
-gcloud compute disks snapshot $name --snapshot-names $snapshotName

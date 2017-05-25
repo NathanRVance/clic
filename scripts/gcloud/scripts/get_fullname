@@ -1,9 +1,0 @@
-#!/bin/bash
-
-shortname=$1
-
-file=~/.ssh/config
-
-line=`grep "^Host $shortname\." $file`
-
-echo $line | awk '{ print $2 }'
