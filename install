@@ -49,10 +49,10 @@ while true; do
 done
 
 echo -n "Installing clic for user $user, using the google cloud instance named $namescheme (that you have already created and loaded with computational software, and which is currently running, otherwise there will be errors!). "
-if [ "$gce" == false ]; then
-	echo "This is not a gce installation, which means that we will ssh into cloud instance $namescheme to configure it."
+if [ "$cloud" == false ]; then
+	echo "This is not a cloud installation, which means that we will ssh into cloud instance $namescheme to configure it."
 else
-	echo "This is a gce installation, which means that we will configure this instance ($namescheme) and make a snapshot of it."
+	echo "This is a cloud installation, which means that we will configure this instance ($namescheme) and make a snapshot of it."
 fi
 echo "Press ENTER to continue, or CTRL-c to exit."
 read ans
