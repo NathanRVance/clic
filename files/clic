@@ -222,7 +222,7 @@ deleteInstance() {
 	echo Y | gcloud compute instances delete NAMESCHEME$num &> /dev/null &
 }
 
-if [ "`hostname`" == "NAMESCHEME" ]; then
+if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
         # do head node stuff
 	sudo rm $LOGFILE
 	sudo touch $LOGFILE

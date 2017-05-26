@@ -50,7 +50,7 @@ done
 
 echo -n "Installing clic for user $user, using the google cloud instance named $namescheme (that you have already created and loaded with computational software, and which is currently running, otherwise there will be errors!). "
 if [ "$cloud" == false ]; then
-	echo "This is not a cloud installation, which means that we will ssh into cloud instance $namescheme to configure it."
+	echo "This is not a cloud installation, which means that we will ssh into the cloud instance named $namescheme to configure it."
 else
 	echo "This is a cloud installation, which means that we will configure this instance ($namescheme) and make a snapshot of it."
 fi
