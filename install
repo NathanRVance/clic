@@ -8,13 +8,15 @@ usage() {
 	echo "-u --user <name>         use <name> as the user for clic installation and use"
 	echo "-n --namescheme <name>   use <name> as the base name for cluster instances"
 	echo "-c --cloud               installing to a cloud computer"
+	echo "-s                       scripted, don't ask for confirmation"
 	echo "-h --help                print this help message"
 }
 
 user=`whoami`
 namescheme=`hostname`
 cloud=false
-ARGS=`getopt -n clic-install -o hgn:u: --long help,cloud,namescheme:,user: -- "$@"`
+script=false
+ARGS=`getopt -n clic-install -o hsgn:u: --long help,cloud,namescheme:,user: -- "$@"`
 if [ $? != 0 ] ; then
         usage
         exit 1
@@ -26,6 +28,10 @@ while true; do
                         usage
                         exit 0
                         ;;
+		-s)
+			script=true;
+			shift
+			;;
                 -c | --cloud)
                         cloud=true
                         shift
@@ -55,8 +61,10 @@ else
 	echo -n "this instance ($namescheme) as the basis for both the head and compute nodes. This instance must "
 fi
 echo "already have any desired computational software installed to it."
-echo "Press ENTER to continue, or CTRL-c to exit."
-read ans
+if [ "$script" == false ]; then
+	echo "Press ENTER to continue, or CTRL-c to exit."
+	read ans
+fi
 
 if [ -n "`uname -a | grep -i Debian`" ]; then
    OS="debian"
@@ -69,6 +77,8 @@ else
    exit
 fi
 echo "Installing for $OS"
+
+command -v gcloud >/dev/null 2>&1 || $CLIC_ROOT/scripts/$OS/setup_gcloud
 
 # Export our variables
 export namescheme=$namescheme
