@@ -76,7 +76,6 @@ sudo mkdir /etc/slurm
 sudo chown slurm: /etc/slurm
 
 #Make a good default slurm.conf
-namescheme=`hostname`
 echo "Using $namescheme as the base name for the cluster"
 echo -e "\n/etc/slurm/slurm.conf:"
 cat $CLIC_ROOT/files/slurm.conf | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/slurm/slurm.conf

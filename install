@@ -2,6 +2,61 @@
 
 export CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+
+usage() {
+        echo "Usage:"
+	echo "-u --user <name>         use <name> as the user for clic installation and use"
+	echo "-n --namescheme <name>   use <name> as the base name for cluster instances"
+	echo "-c --cloud               installing to a cloud computer"
+	echo "-h --help                print this help message"
+}
+
+user=`whoami`
+namescheme=`hostname`
+cloud=false
+ARGS=`getopt -n clic-install -o hgn:u: --long help,cloud,namescheme:,user: -- "$@"`
+if [ $? != 0 ] ; then
+        usage
+        exit 1
+fi
+eval set -- "$ARGS"
+while true; do
+        case $1 in
+                -h | --help)
+                        usage
+                        exit 0
+                        ;;
+                -c | --cloud)
+                        cloud=true
+                        shift
+                        ;;
+                -n | --namescheme)
+                        namescheme="$2"
+                        shift 2
+                        ;;
+                -u | --user)
+                        user=$2
+                        shift 2
+                        ;;
+                --)
+                        shift
+                        break
+                        ;;
+                *)
+                        break
+                        ;;
+        esac
+done
+
+echo -n "Installing clic for user $user, using the google cloud instance named $namescheme (that you have already created and loaded with computational software, and which is currently running, otherwise there will be errors!). "
+if [ "$gce" == false ]; then
+	echo "This is not a gce installation, which means that we will ssh into cloud instance $namescheme to configure it."
+else
+	echo "This is a gce installation, which means that we will configure this instance ($namescheme) and make a snapshot of it."
+fi
+echo "Press ENTER to continue, or CTRL-c to exit."
+read ans
+
 if [ -n "`uname -a | grep -i Debian`" ]; then
    OS="debian"
 elif [ -n "`uname -a | grep -i ubuntu`" ]; then
@@ -12,8 +67,14 @@ else
    echo "Unidentified OS! Exiting."
    exit
 fi
-
 echo "Installing for $OS"
 
+# Export our variables
+export namescheme=$namescheme
+export user=$user
+
 $CLIC_ROOT/scripts/$OS/install_slurm
-$CLIC_ROOT/scripts/install_clic
+$CLIC_ROOT/scripts/common/install_clic
+if [ "$cloud" == true ]; then
+	$CLIC_ROOT/scripts/common/create_cloud_snapshot
+fi
