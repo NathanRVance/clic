@@ -3,7 +3,7 @@
 # One way or another, install git
 gcloud compute ssh $user@$namescheme --command="sudo yum -y install git || sudo apt -y install git"
 # Install slurm
-gcloud compute ssh $user@$namescheme --command="git clone https://github.com/nathanrvance/clic && ./clic/install --cloud"
+gcloud compute ssh $user@$namescheme --command="git clone https://github.com/nathanrvance/clic && ./clic/install --cloud -s"
 # Copy over munge key
 sudo gcloud compute scp /etc/munge/munge.key $user@$namescheme:.
 gcloud compute ssh $user@$namescheme --command="sudo rm /etc/munge/munge.key && sudo cp /home/$user/munge.key /etc/munge/ && sudo chown munge:munge /etc/munge/munge.key && sudo chmod 400 /etc/munge/munge.key"
