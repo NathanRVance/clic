@@ -48,12 +48,13 @@ while true; do
         esac
 done
 
-echo -n "Installing clic for user $user, using the google cloud instance named $namescheme (that you have already created and loaded with computational software, and which is currently running, otherwise there will be errors!). "
+echo -n "Installing clic for user $user, using "
 if [ "$cloud" == false ]; then
-	echo "This is not a cloud installation, which means that we will ssh into the cloud instance named $namescheme to configure it."
+	echo -n "the google cloud instance named $namescheme as the basis for all compute nodes. The instance $namescheme must be currently running and "
 else
-	echo "This is a cloud installation, which means that we will configure this instance ($namescheme) and make a snapshot of it."
+	echo -n "this instance ($namescheme) as the basis for both the head and compute nodes. This instance must "
 fi
+echo "already have any desired computational software installed to it."
 echo "Press ENTER to continue, or CTRL-c to exit."
 read ans
 
