@@ -14,3 +14,5 @@ gcloud compute ssh $user@$namescheme --command="sudo rm /etc/slurm/slurm.conf &&
 # Stop and snapshot the instance
 gcloud compute instances stop $namescheme
 gcloud compute disks snapshot $namescheme --snapshot-names=$namescheme
+
+echo "You are now free to delete the instance named $namescheme if you desire."

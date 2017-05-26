@@ -230,8 +230,10 @@ if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
         echo "Starting slurmctld.service" | tee -a $LOGFILE
         systemctl restart slurmctld.service
 	zone=`gcloud compute instances list | grep "$(hostname) " | awk '{print $2}'`
-	echo "Configuring gcloud for zone: $zone" | tee -a $LOGFILE
-	gcloud config set compute/zone $zone
+	if [ "CLOUD" == "true" ]; then
+		echo "Configuring gcloud for zone: $zone" | tee -a $LOGFILE
+		gcloud config set compute/zone $zone
+	fi
 	mainLoop &
 else
         # do compute node stuff
