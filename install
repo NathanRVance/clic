@@ -54,14 +54,14 @@ while true; do
         esac
 done
 
-echo -n "Installing clic for user $user, using "
-if [ "$cloud" == false ]; then
-	echo -n "the google cloud instance named $namescheme as the basis for all compute nodes. The instance $namescheme must be currently running and "
-else
-	echo -n "this instance ($namescheme) as the basis for both the head and compute nodes. This instance must "
-fi
-echo "already have any desired computational software installed to it."
 if [ "$script" == false ]; then
+	echo -n "Installing clic for user $user, using "
+	if [ "$cloud" == false ]; then
+		echo -n "the google cloud instance named $namescheme as the basis for all compute nodes. The instance $namescheme must be currently running and "
+	else
+		echo -n "this instance ($namescheme) as the basis for both the head and compute nodes. This instance must "
+	fi
+	echo "already have any desired computational software installed to it."
 	echo "Press ENTER to continue, or CTRL-c to exit."
 	read ans
 fi

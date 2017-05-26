@@ -12,6 +12,7 @@ sudo gcloud compute scp /etc/slurm/slurm.conf $user@$namescheme:.
 gcloud compute ssh $user@$namescheme --command="sudo rm /etc/slurm/slurm.conf && sudo cp /home/$user/slurm.conf /etc/slurm/ && sudo chown root:root /etc/slurm/slurm.conf && sudo chmod 644 /etc/slurm/slurm.conf"
 
 # Stop and snapshot the instance
+echo "Stopping $namescheme"
 gcloud compute instances stop $namescheme
 gcloud compute disks snapshot $namescheme --snapshot-names=$namescheme
 
