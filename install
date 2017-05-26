@@ -72,9 +72,10 @@ echo "Installing for $OS"
 # Export our variables
 export namescheme=$namescheme
 export user=$user
+export cloud=$cloud
 
 $CLIC_ROOT/scripts/$OS/install_slurm
 $CLIC_ROOT/scripts/common/install_clic
-if [ "$cloud" == true ]; then
+if [ "$cloud" == false ]; then
 	$CLIC_ROOT/scripts/common/create_cloud_snapshot
 fi

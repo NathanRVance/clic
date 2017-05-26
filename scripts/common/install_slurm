@@ -84,13 +84,15 @@ cat $CLIC_ROOT/files/slurm.conf | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /e
 echo -e "\n/etc/exports:"
 cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
 
-# Set up passwordless ssh between nodes
-echo | ssh-keygen -N ""
-cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-echo -e "\nDisabling knownhost checking:"
-echo "StrictHostKeyChecking no
-UserKnownHostsFile=/dev/null
-LogLevel error" | sudo tee --append /etc/ssh/ssh_config
-# So that nodes can still access ~/.ssh when /home is mounted, there must be another mountpoint to bind it to.
-sudo mkdir /.ssh
-sudo chown `whoami`:`whoami` /.ssh
+if [ "$cloud" == true ]; then
+	# Set up passwordless ssh between nodes
+	echo | ssh-keygen -N ""
+	cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+	echo -e "\nDisabling knownhost checking:"
+	echo "	StrictHostKeyChecking no
+	UserKnownHostsFile=/dev/null
+	LogLevel error" | sudo tee --append /etc/ssh/ssh_config
+	# So that nodes can still access ~/.ssh when /home is mounted, there must be another mountpoint to bind it to.
+	sudo mkdir /.ssh
+	sudo chown `whoami`:`whoami` /.ssh
+fi
