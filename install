@@ -5,7 +5,7 @@ export CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 usage() {
         echo "Usage:"
-	echo "-u --user <name>         use <name> as the user for clic installation and use"
+	echo "-u --user <name>         use <name> as the user for clic installation"
 	echo "-n --namescheme <name>   use <name> as the base name for cluster instances"
 	echo "-c --cloud               installing to a cloud computer"
 	echo "-s                       scripted, don't ask for confirmation"
@@ -16,7 +16,7 @@ user=`whoami`
 namescheme=`hostname`
 cloud=false
 script=false
-ARGS=`getopt -n clic-install -o hsgn:u: --long help,cloud,namescheme:,user: -- "$@"`
+ARGS=`getopt -n clic-install -o hscn:u: --long help,cloud,namescheme:,user: -- "$@"`
 if [ $? != 0 ] ; then
         usage
         exit 1
