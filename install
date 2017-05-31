@@ -11,10 +11,10 @@ usage() {
 	echo "-h --help                print this help message"
 }
 
-user=`whoami`
-namescheme=`hostname`
-cloud=false
-script=false
+export user=`whoami`
+export namescheme=`hostname`
+export cloud=false
+export script=false
 ARGS=`getopt -n clic-install -o hscn:u: --long help,cloud,namescheme:,user: -- "$@"`
 if [ $? != 0 ] ; then
         usage
@@ -28,19 +28,19 @@ while true; do
                         exit 0
                         ;;
 		-s)
-			script=true;
+			export script=true;
 			shift
 			;;
                 -c | --cloud)
-                        cloud=true
+                        export cloud=true
                         shift
                         ;;
                 -n | --namescheme)
-                        namescheme="$2"
+                        export namescheme="$2"
                         shift 2
                         ;;
                 -u | --user)
-                        user=$2
+                        export user=$2
                         shift 2
                         ;;
                 --)
@@ -56,7 +56,7 @@ done
 if [ "$script" == false ]; then
 	echo -n "Installing clic using "
 	if [ "$cloud" == false ]; then
-		echo -n "the google cloud instance named $namescheme as the basis for all compute nodes, and the user accound $user on $namescheme for ssh communication. The instance $namescheme must be currently running and "
+		echo -n "the google cloud instance named $namescheme as the basis for all compute nodes, and the user account $user on $namescheme for ssh communication. The instance $namescheme must be currently running and "
 	else
 		echo -n "this cloud instance ($namescheme) as the basis for both the head and compute nodes, and the user account $user on this instance for ssh communication. This instance must "
 	fi
@@ -78,11 +78,6 @@ fi
 echo "Installing for $OS"
 
 command -v gcloud >/dev/null 2>&1 || $CLIC_ROOT/scripts/$OS/setup_gcloud
-
-# Export our variables
-export namescheme=$namescheme
-export user=$user
-export cloud=$cloud
 
 $CLIC_ROOT/scripts/$OS/install_slurm
 $CLIC_ROOT/scripts/common/install_clic
