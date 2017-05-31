@@ -2,11 +2,10 @@
 
 export CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-
 usage() {
         echo "Usage:"
-	echo "-u --user <name>         use <name> as the user for clic installation"
-	echo "-n --namescheme <name>   use <name> as the base name for cluster instances"
+	echo "-u --user <name>         set up user account <name> on cloud computers for use with clic"
+	echo "-n --namescheme <name>   use <name> as the base name for cloud instances"
 	echo "-c --cloud               installing to a cloud computer"
 	echo "-s                       scripted, don't ask for confirmation"
 	echo "-h --help                print this help message"
@@ -55,11 +54,11 @@ while true; do
 done
 
 if [ "$script" == false ]; then
-	echo -n "Installing clic for user $user, using "
+	echo -n "Installing clic using "
 	if [ "$cloud" == false ]; then
-		echo -n "the google cloud instance named $namescheme as the basis for all compute nodes. The instance $namescheme must be currently running and "
+		echo -n "the google cloud instance named $namescheme as the basis for all compute nodes, and the user accound $user on $namescheme for ssh communication. The instance $namescheme must be currently running and "
 	else
-		echo -n "this instance ($namescheme) as the basis for both the head and compute nodes. This instance must "
+		echo -n "this cloud instance ($namescheme) as the basis for both the head and compute nodes, and the user account $user on this instance for ssh communication. This instance must "
 	fi
 	echo "already have any desired computational software installed to it."
 	echo "Press ENTER to continue, or CTRL-c to exit."
@@ -89,4 +88,5 @@ $CLIC_ROOT/scripts/$OS/install_slurm
 $CLIC_ROOT/scripts/common/install_clic
 if [ "$cloud" == false ]; then
 	$CLIC_ROOT/scripts/common/create_cloud_snapshot
+	echo "Please ensure that tcp port 6817 is allowed through the firewall to this machine."
 fi
