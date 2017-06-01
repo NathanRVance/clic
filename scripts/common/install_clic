@@ -13,3 +13,5 @@ cat $CLIC_ROOT/files/clic.service | sudo tee /etc/systemd/system/clic.service
 sudo systemctl enable clic.service
 sudo systemctl restart clic.service
 
+#Move helper script into place
+cp $CLIC_ROOT/files/clic-sync

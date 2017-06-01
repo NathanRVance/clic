@@ -9,6 +9,7 @@ MAX_NODE_NUM=99
 
 mainLoop() {
 	while [ "true" ]; do
+		syncHosts
 		# Queued and running jobs are one line each containing the job number
 		rJobs=`squeue -h -t r,cg,cf -o %A`
 		qJobs=`squeue -h -t pd -o %A`
@@ -220,6 +221,22 @@ deleteInstance() {
 	setState $num D
 	sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
 	echo Y | gcloud compute instances delete NAMESCHEME$num &> /dev/null &
+}
+
+syncHosts() {
+	file="/etc/hosts"
+	contents="`cat $file`"
+	while read host; do
+		name="`echo $host | awk '{print $1}'`"
+		contents="`echo "$contents" | sed "/^.* $name$/d"`" # Remove the hostname from /etc/hosts
+		if [ "`echo $host | rev | awk '{print $1}' | rev`" == "RUNNING" ]; then
+			ip="`echo $host | rev | awk '{print $2}' | rev`"
+			# Remove the IP address from contents and append the correct ip/hostname
+			contents="`echo "$contents" | sed "/^$ip .*$/d"`
+$ip $name"
+		fi
+	done < <(gcloud compute instances list | tail -n +2)
+	echo "$contents" > $file
 }
 
 if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
