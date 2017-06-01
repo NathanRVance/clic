@@ -10,6 +10,7 @@ MAX_NODE_NUM=99
 mainLoop() {
 	while [ "true" ]; do
 		clic-sync-hosts
+		resolveIPs
 		# Queued and running jobs are one line each containing the job number
 		rJobs=`squeue -h -t r,cg,cf -o %A`
 		qJobs=`squeue -h -t pd -o %A`
@@ -79,10 +80,10 @@ mainLoop() {
 			fi
 
 			# Error avoidance
-			#if [ -n "`grep NAMESCHEME$node <<< $googleReported`" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
-			#	# Set the node to be resumed once again in slurm
-			#	sudo scontrol update nodename=NAMESCHEME$node state=resume
-			#fi
+			if [ -n "`grep NAMESCHEME$node <<< $googleReported`" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
+				# Initialize the node
+				nodeInit $node
+			fi
 			
 			# Error conditions
 			if [ "`state $node`" == "R" ] && [ -z "`grep NAMESCHEME$node <<< $googleReported`" ]; then
@@ -134,11 +135,11 @@ upNodes() {
 }
 
 googleReportedUp() {
-	gcloud compute instances list | tail -n+3 | awk '{print $1}'	
+	gcloud compute instances list | tail -n+2 | grep "RUNNING" | awk '{print $1}'
 }
 
 existingDisks() {
-	gcloud compute disks list | tail -n+3 | awk '{print $1}'
+	gcloud compute disks list | tail -n+2 | awk '{print $1}'
 }
 
 state() {
@@ -223,6 +224,25 @@ deleteInstance() {
 	echo Y | gcloud compute instances delete NAMESCHEME$num &> /dev/null &
 }
 
+resolveIPs() {
+	local ip="`dig +short myip.opendns.com @resolver1.opendns.com`"
+	local recordedIP="`grep ControlMachine= /etc/slurm/slurm.conf | cut -d '=' -f 2`"
+	if [ "$ip" != "$recordedIP" ]; then
+		for node in `googleReportedUp`; do
+			num="`echo $node | sed 's/NAMESCHEME//'`"
+			if [ -n "$num" ]; then
+				nodeInit $num
+			fi
+		done
+	fi
+}
+
+nodeInit() {
+	local num=$1
+	ssh USER@NAMESCHEME$num "sudo sed -i "s/ControlMachine=.*/ControlMachine=$(dig +short myip.opendns.com @resolver1.opendns.com)/" /etc/slurm/slurm.conf"
+	ssh USER@NAMESCHEME$num "sudo systemctl restart slurmd"
+}
+
 if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
         # do head node stuff
 	sudo rm $LOGFILE
@@ -247,5 +267,5 @@ else
 	sudo mount NAMESCHEME:/home /home --rw
 	sudo mount --bind /.ssh /home/USER/.ssh
 	echo "Starting slurmd.service"
-        systemctl start slurmd.service
+        systemctl restart slurmd.service
 fi

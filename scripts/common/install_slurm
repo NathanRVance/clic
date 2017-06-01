@@ -78,7 +78,8 @@ sudo chown slurm: /etc/slurm
 #Make a good default slurm.conf
 echo "Using $namescheme as the base name for the cluster"
 echo -e "\n/etc/slurm/slurm.conf:"
-cat $CLIC_ROOT/files/slurm.conf | sed "s/HEADNODE/`hostname`/g" | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/slurm/slurm.conf
+ip=`dig +short myip.opendns.com @resolver1.opendns.com`
+cat $CLIC_ROOT/files/slurm.conf | sed "s/HEADNODE/$ip/g" | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/slurm/slurm.conf
 
 # Set up exports. Only the head node needs this, but it isn't a problem to have this configured for all nodes.
 echo -e "\n/etc/exports:"

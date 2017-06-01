@@ -1,6 +1,7 @@
 #!/bin/bash
 
 file="/etc/hosts"
+hostList="`gcloud compute instances list | tail -n +2`"
 contents="`cat $file`"
 while read host; do
 	name="`echo $host | awk '{print $1}'`"
@@ -11,5 +12,5 @@ while read host; do
 		contents="`echo "$contents" | sed "/^$ip .*$/d"`
 $ip $name"
 	fi
-done < <(gcloud compute instances list | tail -n +2)
+done <<< "$hostList"
 echo "$contents" > $file
