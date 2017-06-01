@@ -8,8 +8,8 @@ sudo su - -c "gcloud compute instances list &> /dev/null || gcloud init"
 echo "Allowing tcp port 6818 for cloud instances"
 gcloud beta compute firewall-rules create "slurmd" --allow tcp:6818 --direction "INGRESS" --priority "1000" --network "default" --source-ranges "0.0.0.0/0"
 
-if [ ! -e ~/.ssh/id_rsa.pub ]; then
-	ssh-keygen
+if [ ! -e ~/.ssh/id_rsa ]; then
+	ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa
 fi
 
 echo "Allowing passwordless ssh from user account `whoami` on this machine to $user on cloud instances"
