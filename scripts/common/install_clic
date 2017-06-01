@@ -7,14 +7,14 @@ echo -e "\n/usr/bin/clic:"
 cat $CLIC_ROOT/files/clic | sed "s/CLOUD/$cloud/g" | sed "s/NAMESCHEME/$namescheme/g" | sed "s/USER/$user/g" | sudo tee /usr/bin/clic
 sudo chmod +x /usr/bin/clic
 
-#Create a service to start the clic daemon
-echo -e "\n/etc/systemd/system/clic.service:"
-cat $CLIC_ROOT/files/clic.service | sudo tee /etc/systemd/system/clic.service
-sudo systemctl enable clic.service
-sudo systemctl restart clic.service
-
 #Move helper script into place
 echo -e "\n/usr/bin/clic-sync-hosts:"
 cat $CLIC_ROOT/files/clic-sync-hosts | sudo tee /usr/bin/clic-sync-hosts
 sudo chmod +x /usr/bin/clic-sync-hosts
 sudo clic-sync-hosts
+
+#Create a service to start the clic daemon
+echo -e "\n/etc/systemd/system/clic.service:"
+cat $CLIC_ROOT/files/clic.service | sudo tee /etc/systemd/system/clic.service
+sudo systemctl enable clic.service
+sudo systemctl restart clic.service
