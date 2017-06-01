@@ -14,4 +14,7 @@ sudo systemctl enable clic.service
 sudo systemctl restart clic.service
 
 #Move helper script into place
-cp $CLIC_ROOT/files/clic-sync
+echo -e "\n/usr/bin/clic-sync-hosts:"
+cat $CLIC_ROOT/files/clic-sync-hosts | sudo tee /usr/bin/clic-sync-hosts
+sudo chmod +x /usr/bin/clic-sync-hosts
+sudo clic-sync-hosts

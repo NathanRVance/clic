@@ -1,0 +1,15 @@
+#!/bin/bash
+
+file="/etc/hosts"
+contents="`cat $file`"
+while read host; do
+	name="`echo $host | awk '{print $1}'`"
+	contents="`echo "$contents" | sed "/^.* $name$/d"`" # Remove the hostname from /etc/hosts
+	if [ "`echo $host | rev | awk '{print $1}' | rev`" == "RUNNING" ]; then
+		ip="`echo $host | rev | awk '{print $2}' | rev`"
+		# Remove the IP address from contents and append the correct ip/hostname
+		contents="`echo "$contents" | sed "/^$ip .*$/d"`
+$ip $name"
+	fi
+done < <(gcloud compute instances list | tail -n +2)
+echo "$contents" > $file
