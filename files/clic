@@ -240,7 +240,7 @@ resolveIPs() {
 
 nodeInit() {
 	local num=$1
-	ssh USER@NAMESCHEME$num "sudo clic-sync-hosts `hostname -s` `dig +short myip.opendns.com @resolver1.opendns.com`"
+	ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null USER@NAMESCHEME$num "sudo clic-sync-hosts `hostname -s` `dig +short myip.opendns.com @resolver1.opendns.com`"
 }
 
 if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
