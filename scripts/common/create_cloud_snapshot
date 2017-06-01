@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Add it to known_hosts
+ssh-keyscan $namescheme >> ~/.ssh/known_hosts
 # One way or another, install git
 ssh $user@$namescheme "sudo yum -y install git || sudo apt -y install git"
 # Install slurm
