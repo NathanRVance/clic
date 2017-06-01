@@ -226,7 +226,7 @@ deleteInstance() {
 
 resolveIPs() {
 	local ip="`dig +short myip.opendns.com @resolver1.opendns.com`"
-	local recordedIP="`grep ControlMachine= /etc/slurm/slurm.conf | cut -d '=' -f 2`"
+	local recordedIP="$(grep $(hostname -s) /etc/hosts | awk '{print $1}')"
 	if [ "$ip" != "$recordedIP" ]; then
 		for node in `googleReportedUp`; do
 			num="`echo $node | sed 's/NAMESCHEME//'`"
@@ -234,13 +234,13 @@ resolveIPs() {
 				nodeInit $num
 			fi
 		done
+		clic-sync-hosts `hostname -s` $ip
 	fi
 }
 
 nodeInit() {
 	local num=$1
-	ssh USER@NAMESCHEME$num "sudo sed -i "s/ControlMachine=.*/ControlMachine=$(dig +short myip.opendns.com @resolver1.opendns.com)/" /etc/slurm/slurm.conf"
-	ssh USER@NAMESCHEME$num "sudo systemctl restart slurmd"
+	ssh USER@NAMESCHEME$num "sudo clic-sync-hosts `hostname -s` `dig +short myip.opendns.com @resolver1.opendns.com`"
 }
 
 if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then

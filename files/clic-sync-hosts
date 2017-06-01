@@ -1,7 +1,11 @@
 #!/bin/bash
 
 file="/etc/hosts"
-hostList="`gcloud compute instances list | tail -n +2`"
+if [ $# -eq 0 ]; then
+	hostList="`gcloud compute instances list | tail -n +2`"
+else
+	hostList="$1 $2 RUNNING"
+fi
 contents="`cat $file`"
 while read host; do
 	name="`echo $host | awk '{print $1}'`"
