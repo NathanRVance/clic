@@ -7,11 +7,15 @@ echo -e "\n/usr/bin/clic:"
 cat $CLIC_ROOT/files/clic | sed "s/CLOUD/$cloud/g" | sed "s/NAMESCHEME/$namescheme/g" | sed "s/USER/$user/g" | sed "s&KEY&/home/`whoami`/.ssh/id_rsa&g" | sudo tee /usr/bin/clic
 sudo chmod +x /usr/bin/clic
 
-#Move helper script into place
+#Move helper scripts into place
 echo -e "\n/usr/bin/clic-sync-hosts:"
 cat $CLIC_ROOT/files/clic-sync-hosts | sudo tee /usr/bin/clic-sync-hosts
 sudo chmod +x /usr/bin/clic-sync-hosts
 sudo clic-sync-hosts
+
+echo -e "\n/usr/bin/clic-nodesup:"
+cat $CLIC_ROOT/files/clic-nodesup | sudo tee /usr/bin/clic-nodesup
+sudo chmod +x /usr/bin/clic-nodesup
 
 #Create a service to start the clic daemon
 echo -e "\n/etc/systemd/system/clic.service:"

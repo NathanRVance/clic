@@ -1,9 +1,0 @@
-#!/bin/bash
-
-# UIDs and GIDs must be uniform across the cluster for munge to work. As of 2017, Slurm's quickstart states that "The only currently supported authentication types is munge" [sic].
-# This is trivial when compute nodes are clones of the head node (as in a cloud installation), but requires some fancy footwork when dealing with a remote head node. Therefore,
-# this script should only be run from a remote head node.
-
-# We'll start by adding all users and groups to both systems.
-opts="-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null"
-ssh $opts $user@$namescheme
