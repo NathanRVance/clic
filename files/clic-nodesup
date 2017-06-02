@@ -50,15 +50,20 @@ responds() {
 	echo false
 }
 
-cloudReport="`gcloud compute instances list 2>&1 | tail -n+2`"
-if [ -z "$cloudReport" ]; then exit; fi
-if [ "$running" == "true" ]; then
-	cloudReport="`echo "$cloudReport" | grep "RUNNING" | awk '{print $1}'`"
-	for node in $cloudReport; do
+getResponds() {
+	hosts=$1
+	for node in $hosts; do
 		{ if [ "`responds $node`" == true ]; then
 			echo $node
 		fi } &
 	done
+}
+
+cloudReport="`gcloud compute instances list 2>&1 | tail -n+2`"
+if [ -z "$cloudReport" ]; then exit; fi
+if [ "$running" == "true" ]; then
+	cloudReport="`echo "$cloudReport" | grep "RUNNING" | awk '{print $1}'`"
+	echo "`getResponds "$cloudReport"`"
 else
 	echo "$cloudReport" | awk '{print $1}'
 fi
