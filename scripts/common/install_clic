@@ -14,7 +14,7 @@ sudo chmod +x /usr/bin/clic-sync-hosts
 sudo clic-sync-hosts
 
 echo -e "\n/usr/bin/clic-nodesup:"
-cat $CLIC_ROOT/files/clic-nodesup | sudo tee /usr/bin/clic-nodesup
+cat $CLIC_ROOT/files/clic-nodesup | sed "s/USER/$user/g" | sed "s&KEY&/home/`whoami`/.ssh/id_rsa&g" | sudo tee /usr/bin/clic-nodesup
 sudo chmod +x /usr/bin/clic-nodesup
 
 #Create a service to start the clic daemon

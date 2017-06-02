@@ -43,7 +43,7 @@ responds() {
 			echo false
 		fi
 	) &
-	while ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null $host exit &> /dev/null; do
+	while ssh -i KEY -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null USER@$host exit &> /dev/null; do
 		echo true
 		exit
 	done
