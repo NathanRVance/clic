@@ -75,10 +75,17 @@ sudo chown slurm: /var/log/slurm/slurm_jobacct.log /var/log/slurm/slurm_jobcomp.
 sudo mkdir /etc/slurm
 sudo chown slurm: /etc/slurm
 
-#Make a good default slurm.conf
+# Make a good default slurm.conf
 echo "Using $namescheme as the base name for the cluster"
 echo -e "\n/etc/slurm/slurm.conf:"
 cat $CLIC_ROOT/files/slurm.conf | sed "s/HEADNODE/`hostname -s`/g" | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/slurm/slurm.conf
+
+# Generate keys
+echo "Creating ssl keys for slurm"
+sudo openssl genrsa -out /etc/slurm/slurm.key 1024
+sudo openssl rsa -in /etc/slurm/slurm.key -pubout -out /etc/slurm/slurm.cert
+sudo chown slurm:slurm /etc/slurm/slurm.key /etc/slurm/slurm.cert
+sudo chmod 400 /etc/slurm/slurm.key
 
 # Set up exports. Only the head node needs this, but it isn't a problem to have this configured for all nodes.
 echo -e "\n/etc/exports:"
