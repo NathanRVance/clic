@@ -78,6 +78,7 @@ fi
 echo "Installing for $OS"
 
 command -v gcloud >/dev/null 2>&1 || $CLIC_ROOT/scripts/$OS/setup_gcloud
+$CLIC_ROOT/scripts/common/setup_gcloud
 
 $CLIC_ROOT/scripts/$OS/install_slurm
 $CLIC_ROOT/scripts/common/install_clic
