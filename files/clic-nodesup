@@ -33,9 +33,32 @@ while true; do
 	esac
 done
 
+responds() {
+	host=$1
+	cmdpid=$BASHPID
+	(
+		sleep 1
+		kill -PIPE $cmdpid &> /dev/null
+		if [ $? == 0 ]; then
+			echo false
+		fi
+	) &
+	while ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null $host exit &> /dev/null; do
+		echo true
+		exit
+	done
+	echo false
+}
+
 cloudReport="`gcloud compute instances list 2>&1 | tail -n+2`"
 if [ -z "$cloudReport" ]; then exit; fi
 if [ "$running" == "true" ]; then
-	cloudReport="`echo "$cloudReport" | grep "RUNNING"`"
+	cloudReport="`echo "$cloudReport" | grep "RUNNING" | awk '{print $1}'`"
+	for node in $cloudReport; do
+		{ if [ "`responds $node`" == true ]; then
+			echo $node
+		fi } &
+	done
+else
+	echo "$cloudReport" | awk '{print $1}'
 fi
-echo "$cloudReport" | awk '{print $1}'
