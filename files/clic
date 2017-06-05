@@ -235,7 +235,10 @@ nodeInit() {
 	else
 		ip="`dig +short myip.opendns.com @resolver1.opendns.com`"
 	fi
-	ssh -i KEY -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null USER@NAMESCHEME$num "sudo clic-sync-hosts `hostname -s` $ip"
+	opts="-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" 
+	ssh -i KEY $opts USER@NAMESCHEME$num "sudo clic-sync-hosts `hostname -s` $ip &&
+		sshfs -o ssh_command=\"ssh -i /.ssh/id_rsa\" $opts -o idmap=user -o nonempty REMOTEUSER@`hostname -s`:/home /home &&
+		mount --bind /.ssh /home/USER/.ssh"
 }
 
 if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
@@ -253,10 +256,8 @@ if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
 	mainLoop &
 else
         # do compute node stuff
-        #mount NAMESCHEME:/etc/slurm /etc/slurm --ro
+	mkdir /.ssh
 	mount --bind /home/USER/.ssh /.ssh
-	mount NAMESCHEME:/home /home --rw
-	mount --bind /.ssh /home/USER/.ssh
 	echo "Starting slurmd.service"
         systemctl restart slurmd.service
 fi
