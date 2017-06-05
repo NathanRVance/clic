@@ -87,6 +87,6 @@ sudo openssl rsa -in /etc/slurm/slurm.key -pubout -out /etc/slurm/slurm.cert
 sudo chown slurm:slurm /etc/slurm/slurm.key /etc/slurm/slurm.cert
 sudo chmod 400 /etc/slurm/slurm.key
 
-# Set up exports. Only the head node needs this, but it isn't a problem to have this configured for all nodes.
+# Set up exports
 echo -e "\n/etc/exports:"
 cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports

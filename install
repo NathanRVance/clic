@@ -84,7 +84,7 @@ $CLIC_ROOT/scripts/$OS/install_slurm
 $CLIC_ROOT/scripts/common/install_clic
 if [ "$cloud" == false ]; then
 	$CLIC_ROOT/scripts/common/create_cloud_snapshot
-	echo "Please ensure that tcp port 6817 is allowed through the firewall to this machine."
+	echo "Please ensure that tcp port 6817 (slurm) and tcp port 2049 (nfs) are allowed through the firewall to this machine."
 elif [ "$script" == false ]; then
 	echo "Please stop this instance, take a snapshot of it, and name the snapshot \"$namescheme\". Once that is done, you can start this instance again and use it as the head node."
 fi
