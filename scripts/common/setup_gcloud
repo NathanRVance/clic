@@ -5,8 +5,10 @@
 # Make sure gcloud is set up for the root user
 sudo su - -c "gcloud compute instances list &> /dev/null || gcloud init"
 
-echo "Allowing tcp port 6818 for cloud instances"
-gcloud beta compute firewall-rules create "slurmd" --allow tcp:6818 --direction "INGRESS" --priority "1000" --network "default" --source-ranges "0.0.0.0/0"
+if [ "$cloud" == "false" ]; then
+	echo "Allowing tcp port 6818 for cloud instances"
+	gcloud beta compute firewall-rules create "slurmd" --allow tcp:6818 --direction "INGRESS" --priority "1000" --network "default" --source-ranges "0.0.0.0/0"
+fi
 
 if [ ! -e ~/.ssh/id_rsa ]; then
 	ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa

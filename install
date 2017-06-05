@@ -86,5 +86,5 @@ if [ "$cloud" == false ]; then
 	$CLIC_ROOT/scripts/common/create_cloud_snapshot
 	echo "Please ensure that tcp port 6817 is allowed through the firewall to this machine."
 elif [ "$script" == false ]; then
-	echo "Please shut down this instance, then take a snapshot of it with the name $namescheme. Once that is done, you can start this instance again and use it as the head node."
+	echo "Please stop this instance, take a snapshot of it, and name the snapshot \"$namescheme\". Once that is done, you can start this instance again and use it as the head node."
 fi

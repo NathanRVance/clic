@@ -77,7 +77,7 @@ mainLoop() {
 			elif [ "`state $node`" == "D" ] && [ -z "`grep NAMESCHEME$node <<< $cloudReportedAll`" ]; then
 				# Node was deleting, now is gone
 				echo "Node NAMESCHEME$node went down" | tee -a $LOGFILE
-				sudo scontrol update nodename=NAMESCHEME$node state=down reason="Deleted"
+				scontrol update nodename=NAMESCHEME$node state=down reason="Deleted"
 				setState $node ""
 				nodesWentDown=true
 
@@ -85,7 +85,7 @@ mainLoop() {
 			elif [ "`state $node`" == "R" ] && [ -z "`grep NAMESCHEME$node <<< $cloudReportedRunning`" ]; then
 				# We think the node is running, but the cloud doesn't
 				echo "ERROR: Node NAMESCHEME$node deleted outside of clic!" | tee -a $LOGFILE
-				sudo scontrol update nodename=NAMESCHEME$node state=down reason="Error"
+				scontrol update nodename=NAMESCHEME$node state=down reason="Error"
 				setState $node ""
 			elif [ "`state $node`" == "R" ] && [ -n "`grep NAMESCHEME$node <<< $cloudReportedRunning`" ] && [ -z "`grep NAMESCHEME$node <<< $nodenamesUp`" ]; then
 				# We think it should be running, and so does the cloud, but Slurm doesn't
@@ -105,7 +105,7 @@ mainLoop() {
 		if [ "$nodesWentDown" == "true" ]; then
 			# There's a chance they'll come up later with different IPs. Restart slurmctld to avoid errors.
 			echo "WARNING: Restarting slurmctld" | tee -a $LOGFILE
-			sudo systemctl restart slurmctld.service
+			systemctl restart slurmctld.service
 		fi
 
 		sleep $SLEEP_TIME
@@ -165,7 +165,7 @@ create() {
 				echo Y | gcloud compute disks delete NAMESCHEME$num &> /dev/null &
 			else
 				setState $num C
-				sudo scontrol update nodename=NAMESCHEME$num state=resume
+				scontrol update nodename=NAMESCHEME$num state=resume
 				echo "Creating NAMESCHEME$num" | tee -a $LOGFILE
 				gcloud compute disks create NAMESCHEME$num --size 10 --source-snapshot NAMESCHEME &> /dev/null &&
 				gcloud compute instances create NAMESCHEME$num --machine-type "n1-standard-1" --disk "name=NAMESCHEME$num,device-name=NAMESCHEME$num,mode=rw,boot=yes,auto-delete=yes" &> /dev/null ||
@@ -186,7 +186,7 @@ delete() {
 			break
 		elif [ -n "`grep "NAMESCHEME$num" <<< "$idleNodes"`" ] && [ "`state $num`" == "R" ]; then
 			setState $num D
-			sudo scontrol update nodename=NAMESCHEME$num state=drain reason="Deleting"
+			scontrol update nodename=NAMESCHEME$num state=drain reason="Deleting"
 			{
 				local n=$num
 				while true; do
@@ -207,7 +207,7 @@ deleteInstance() {
 	local num=$1
 	echo "Deleting NAMESCHEME$num" | tee -a $LOGFILE
 	setState $num D
-	sudo scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
+	scontrol update nodename=NAMESCHEME$num state=down reason="Deleted"
 	echo Y | gcloud compute instances delete NAMESCHEME$num &> /dev/null &
 }
 
@@ -240,9 +240,9 @@ nodeInit() {
 
 if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
         # do head node stuff
-	sudo rm $LOGFILE
-	sudo touch $LOGFILE
-	sudo chown `whoami`:`whoami` $LOGFILE
+	rm $LOGFILE
+	touch $LOGFILE
+	chown `whoami`:`whoami` $LOGFILE
         echo "Starting slurmctld.service" | tee -a $LOGFILE
         systemctl restart slurmctld.service
 	if [ "CLOUD" == "true" ]; then
@@ -253,10 +253,10 @@ if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
 	mainLoop &
 else
         # do compute node stuff
-        #sudo mount NAMESCHEME:/etc/slurm /etc/slurm --ro
-	#sudo mount --bind /home/USER/.ssh /.ssh
-	#sudo mount NAMESCHEME:/home /home --rw
-	#sudo mount --bind /.ssh /home/USER/.ssh
+        #mount NAMESCHEME:/etc/slurm /etc/slurm --ro
+	#mount --bind /home/USER/.ssh /.ssh
+	#mount NAMESCHEME:/home /home --rw
+	#mount --bind /.ssh /home/USER/.ssh
 	echo "Starting slurmd.service"
         systemctl restart slurmd.service
 fi
