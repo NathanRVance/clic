@@ -129,10 +129,6 @@ upNodes() {
 	sinfo -h -N -r -o %N
 }
 
-existingDisks() {
-	gcloud compute disks list | tail -n+2 | awk '{print $1}'
-}
-
 state() {
 	local node="`echo $1 | sed 's/^0*//'`"
 	echo ${nodes[$node]} | awk '{print $1}'
@@ -155,7 +151,7 @@ setState() {
 
 create() {
 	local numToCreate=$1
-	existingDisks="`existingDisks`"
+	existingDisks="`gcloud compute disks list | tail -n+2 | awk '{print $1}'`"
 	# Determine the next node name to use
 	local num
 	for num in $(seq -w 1 $MAX_NODE_NUM); do
@@ -216,22 +212,30 @@ deleteInstance() {
 }
 
 resolveIPs() {
-	local ip="`dig +short myip.opendns.com @resolver1.opendns.com`"
-	local recordedIP="$(grep $(hostname -s) /etc/hosts | awk '{print $1}')"
-	if [ "$ip" != "$recordedIP" ]; then
-		for node in `clic-nodesup -r`; do
-			num="`echo $node | sed 's/NAMESCHEME//'`"
-			if [ -n "$num" ]; then
-				nodeInit $num
-			fi
-		done
-		clic-sync-hosts `hostname -s` $ip
+	if [ "CLOUD" == "false" ]; then
+		local ip="`dig +short myip.opendns.com @resolver1.opendns.com`"
+		local recordedIP="$(grep "$(hostname -s)$" /etc/hosts | awk '{print $1}')"
+		if [ "$ip" != "$recordedIP" ]; then
+			for node in `clic-nodesup -r`; do
+				num="`echo $node | sed 's/NAMESCHEME//'`"
+				if [ -n "$num" ]; then
+					nodeInit $num
+				fi
+			done
+			clic-sync-hosts `hostname -s` $ip
+		fi
 	fi
 }
 
 nodeInit() {
 	local num=$1
-	ssh -i KEY -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null USER@NAMESCHEME$num "sudo clic-sync-hosts `hostname -s` `dig +short myip.opendns.com @resolver1.opendns.com`"
+	local ip
+	if [ "CLOUD" == "true" ]; then
+		ip="`gcloud compute instances list | grep "clic " | rev | awk '{print $3}' | rev`"
+	else
+		ip="`dig +short myip.opendns.com @resolver1.opendns.com`"
+	fi
+	ssh -i KEY -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null USER@NAMESCHEME$num "sudo clic-sync-hosts `hostname -s` $ip"
 }
 
 if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
@@ -250,7 +254,6 @@ if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
 else
         # do compute node stuff
         #sudo mount NAMESCHEME:/etc/slurm /etc/slurm --ro
-        #sudo mount NAMESCHEME:/etc/munge /etc/munge --ro
 	#sudo mount --bind /home/USER/.ssh /.ssh
 	#sudo mount NAMESCHEME:/home /home --rw
 	#sudo mount --bind /.ssh /home/USER/.ssh
