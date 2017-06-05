@@ -1,22 +1,22 @@
 #!/bin/bash
 
-export MUNGEUSER=981
-sudo groupadd -g $MUNGEUSER munge
-sudo useradd  -m -c "MUNGE Uid 'N' Gid Emporium" -d /var/lib/munge -u $MUNGEUSER -g munge  -s /sbin/nologin munge
+#export MUNGEUSER=981
+#sudo groupadd -g $MUNGEUSER munge
+#sudo useradd  -m -c "MUNGE Uid 'N' Gid Emporium" -d /var/lib/munge -u $MUNGEUSER -g munge  -s /sbin/nologin munge
 export SLURMUSER=982
 sudo groupadd -g $SLURMUSER slurm
 sudo useradd  -m -c "Slurm workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
 
-echo "Configuring munge"
-sudo dd if=/dev/urandom bs=1 count=1024 | sudo tee /etc/munge/munge.key > /dev/null
-sudo chown munge:munge /etc/munge/munge.key
-sudo chmod 400 /etc/munge/munge.key
+#echo "Configuring munge"
+#sudo dd if=/dev/urandom bs=1 count=1024 | sudo tee /etc/munge/munge.key > /dev/null
+#sudo chown munge:munge /etc/munge/munge.key
+#sudo chmod 400 /etc/munge/munge.key
 
-sudo chown -R munge:munge /etc/munge/ /var/log/munge/
-sudo chmod 0700 /etc/munge/ /var/log/munge/
+#sudo chown -R munge:munge /etc/munge/ /var/log/munge/
+#sudo chmod 0700 /etc/munge/ /var/log/munge/
 
-sudo systemctl enable munge
-sudo systemctl start munge
+#sudo systemctl enable munge
+#sudo systemctl start munge
 
 echo "Installing slurm"
 VER=`curl -s https://www.schedmd.com/downloads.php | grep -oP 'latest/slurm-.*?.tar.bz2' | head -n 1 | grep -o '\([0-9][0-9]*.\)*' | rev | cut -c 2- | rev`
