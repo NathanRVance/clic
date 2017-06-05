@@ -62,9 +62,9 @@ mainLoop() {
 		# States : <C|R|D>
 		# C=creating, R=running, D=deleting
 		# Null string for deleted nodes
-		nodenamesUp=`upNodes` # As reported by slurm
-		cloudReportedRunning=`clic-nodesup -r`
-		cloudReportedAll=`clic-nodesup`
+		nodenamesUp="`upNodes`" # As reported by slurm
+		cloudReportedRunning="`clic-nodesup -r`"
+		cloudReportedAll="`clic-nodesup`"
 		nodesWentDown=false
 		for node in $(seq -w 1 $MAX_NODE_NUM); do
 			# Routine stuff
@@ -82,7 +82,7 @@ mainLoop() {
 				nodesWentDown=true
 
 			# Error conditions
-			elif [ "`state $node`" == "R" ] && [ -z "`grep NAMESCHEME$node <<< $cloudReportedRunnig`" ]; then
+			elif [ "`state $node`" == "R" ] && [ -z "`grep NAMESCHEME$node <<< $cloudReportedRunning`" ]; then
 				# We think the node is running, but the cloud doesn't
 				echo "ERROR: Node NAMESCHEME$node deleted outside of clic!" | tee -a $LOGFILE
 				sudo scontrol update nodename=NAMESCHEME$node state=down reason="Error"
@@ -93,10 +93,8 @@ mainLoop() {
 				deleteInstance $node
 			elif [ -z "`state $node`" ] && [ -n "`grep NAMESCHEME$node <<< $cloudReportedRunning`" ]; then
 				# Node is running, but isn't registered. Maybe the script was restarted?
-				echo "ERROR: Encountered unregistered node NAMESCHEME$node, subsuming into cluster" | tee -a $LOGFILE
-				nodeInit $node
-				sudo scontrol update nodename=NAMESCHEME$node state=resume
-				setState $node R
+				echo "ERROR: Encountered unregistered node NAMESCHEME$node, deleting..." | tee -a $LOGFILE
+				deleteInstance $node
 			elif [ "`state $node`" == "C" ] && [ "`timeInState $node`" -gt 200 ]; then
 				# In create state, and taking way too long
 				echo "ERROR: Node NAMESCHEME$node hung on boot" | tee -a $LOGFILE
@@ -106,7 +104,7 @@ mainLoop() {
 		done
 		if [ "$nodesWentDown" == "true" ]; then
 			# There's a chance they'll come up later with different IPs. Restart slurmctld to avoid errors.
-			echo "WARNING: Restarting slurmctld"
+			echo "WARNING: Restarting slurmctld" | tee -a $LOGFILE
 			sudo systemctl restart slurmctld.service
 		fi
 
@@ -243,8 +241,8 @@ if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
 	sudo chown `whoami`:`whoami` $LOGFILE
         echo "Starting slurmctld.service" | tee -a $LOGFILE
         systemctl restart slurmctld.service
-	zone=`gcloud compute instances list | grep "$(hostname) " | awk '{print $2}'`
 	if [ "CLOUD" == "true" ]; then
+		zone=`gcloud compute instances list | grep "$(hostname) " | awk '{print $2}'`
 		echo "Configuring gcloud for zone: $zone" | tee -a $LOGFILE
 		gcloud config set compute/zone $zone
 	fi
