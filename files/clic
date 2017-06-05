@@ -237,8 +237,8 @@ nodeInit() {
 	fi
 	opts="-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" 
 	ssh -i KEY $opts USER@NAMESCHEME$num "sudo clic-sync-hosts `hostname -s` $ip &&
-		sudo sshfs -o ssh_command=\"ssh -i /.ssh/id_rsa\" $opts -o idmap=user -o nonempty REMOTEUSER@`hostname -s`:/home /home &&
-		mount --bind /.ssh /home/USER/.ssh"
+		sshfs -o ssh_command=\"ssh -i /.ssh/id_rsa\" $opts -o idmap=user -o nonempty REMOTEUSER@`hostname -s`:/home/REMOTEUSER /home/USER &&
+		sudo mount --bind /.ssh /home/USER/.ssh"
 }
 
 if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then

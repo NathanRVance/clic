@@ -4,7 +4,7 @@ echo "Using $namescheme as the base name for the cluster"
 
 #Create a daemon that runs clic
 echo -e "\n/usr/bin/clic:"
-cat $CLIC_ROOT/files/clic | sed "s/CLOUD/$cloud/g" | sed "s/NAMESCHEME/$namescheme/g" | sed "s/USER/$user/g" | sed "s&KEY&/home/`whoami`/.ssh/id_rsa&g" | sed "s/REMOTEUSER/`whoami`/g" | sudo tee /usr/bin/clic
+cat $CLIC_ROOT/files/clic | sed "s/CLOUD/$cloud/g" | sed "s/NAMESCHEME/$namescheme/g" | sed "s/REMOTEUSER/`whoami`/g" | sed "s/USER/$user/g" | sed "s&KEY&/home/`whoami`/.ssh/id_rsa&g" | sudo tee /usr/bin/clic
 sudo chmod +x /usr/bin/clic
 
 #Move helper scripts into place
