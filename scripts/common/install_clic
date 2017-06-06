@@ -17,6 +17,10 @@ echo -e "\n/usr/bin/clic-nodesup:"
 cat $CLIC_ROOT/files/clic-nodesup | sed "s/USER/$user/g" | sed "s&KEY&/home/`whoami`/.ssh/id_rsa&g" | sudo tee /usr/bin/clic-nodesup
 sudo chmod +x /usr/bin/clic-nodesup
 
+echo -e "\n/usr/bin/clic-remote-mount:"
+cat $CLIC_ROOT/files/clic-remote-mount | sudo tee /usr/bin/clic-remote-mount
+sudo chmod +x /usr/bin/clic-remote-mount
+
 #Create a service to start the clic daemon
 echo -e "\n/etc/systemd/system/clic.service:"
 cat $CLIC_ROOT/files/clic.service | sudo tee /etc/systemd/system/clic.service

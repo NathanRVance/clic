@@ -236,9 +236,8 @@ nodeInit() {
 		ip="`dig +short myip.opendns.com @resolver1.opendns.com`"
 	fi
 	opts="-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" 
-	ssh -i KEY $opts USER@NAMESCHEME$num "sudo clic-sync-hosts `hostname -s` $ip &&
-		sshfs -o ssh_command=\"ssh -i /.ssh/id_rsa\" $opts -o idmap=user -o nonempty REMOTEUSER@`hostname -s`:/home/REMOTEUSER /home/USER &&
-		sudo mount --bind /.ssh /home/USER/.ssh"
+	ssh -i KEY $opts USER@NAMESCHEME$num "sudo clic-sync-hosts `hostname -s` $ip"
+	clic-remote-mount REMOTEUSER USER NAMESCHEME$num
 }
 
 if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then

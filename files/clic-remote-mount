@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ $# -ne 3 ]; then
+	echo "Usage: clic-remote-mount localUser remoteUser remoteHostname"
+	exit 1
+fi
+
+localUser=$1
+user=$2
+hostname=$3
+
+opts="-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null"
+ssh -i /home/$localUser/.ssh/id_rsa.pub $opts $user@$hostname "sudo sshfs -o ssh_command=\"ssh -i /.ssh/id_rsa\" -o nonempty -o allow_other -o idmap=file -o nomap=ignore -o uidfile=/root/sshfs_uids -o gidfile=/root/sshfs_gids $localUser@`hostname -s`:/home /home && sudo mount --bind /.ssh /home/$user/.ssh &"
