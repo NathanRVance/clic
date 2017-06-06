@@ -9,5 +9,11 @@ localUser=$1
 user=$2
 hostname=$3
 
+if [ "CLOUD" == "true" ]; then
+	ip="`gcloud compute instances list | grep "clic " | rev | awk '{print $3}' | rev`"
+else
+	ip="`dig +short myip.opendns.com @resolver1.opendns.com`"
+fi
+
 opts="-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null"
-ssh -i /home/$localUser/.ssh/id_rsa.pub $opts $user@$hostname "sudo sshfs -o ssh_command=\"ssh -i /.ssh/id_rsa\" -o nonempty -o allow_other -o idmap=file -o nomap=ignore -o uidfile=/root/sshfs_uids -o gidfile=/root/sshfs_gids $localUser@`hostname -s`:/home /home && sudo mount --bind /.ssh /home/$user/.ssh &"
+ssh -i /home/$localUser/.ssh/id_rsa $opts $user@$hostname "sudo clic-sync-hosts `hostname -s` $ip && sudo sshfs -o ssh_command=\"ssh -i /.ssh/id_rsa\" $opts -o nonempty -o allow_other -o idmap=file -o nomap=ignore -o uidfile=/root/sshfs_uids -o gidfile=/root/sshfs_gids $localUser@`hostname -s`:/home /home && sudo mount --bind /.ssh /home/$user/.ssh &"

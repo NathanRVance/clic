@@ -229,15 +229,7 @@ resolveIPs() {
 
 nodeInit() {
 	local num=$1
-	local ip
-	if [ "CLOUD" == "true" ]; then
-		ip="`gcloud compute instances list | grep "clic " | rev | awk '{print $3}' | rev`"
-	else
-		ip="`dig +short myip.opendns.com @resolver1.opendns.com`"
-	fi
-	opts="-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null" 
-	ssh -i KEY $opts USER@NAMESCHEME$num "sudo clic-sync-hosts `hostname -s` $ip"
-	clic-remote-mount REMOTEUSER USER NAMESCHEME$num
+	clic-remote-mount REMOTEUSER USER NAMESCHEME$num # This command handles /etc/hosts modification for compute nodes
 }
 
 if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then

@@ -21,8 +21,8 @@ ssh $opts $user@$namescheme "cat ~/.ssh/id_rsa.pub" >> ~/.ssh/authorized_keys
 
 # Set up sshfs
 sudo ln -s /home/`whoami` /home/$user
-uid="`ls -n /home/ | grep " `whoami`$" | awk '{print $3}'`"
-gid="`ls -n /home/ | grep " `whoami`$" | awk '{print $4}'`"
+uid="$(ls -n /home/ | grep " $(whoami)$" | awk '{print $3}')"
+gid="`ls -n /home/ | grep " $(whoami)$" | awk '{print $4}'`"
 ssh $opts $user@$namescheme "echo $user:$uid | sudo tee /root/sshfs_uids && echo $user:$gid | sudo tee /root/sshfs_gids"
 
 # Test sshfs
