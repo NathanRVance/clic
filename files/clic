@@ -247,8 +247,6 @@ if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then
 	mainLoop &
 else
         # do compute node stuff
-	mkdir /.ssh
-	mount --bind /home/USER/.ssh /.ssh
 	echo "Starting slurmd.service"
         systemctl restart slurmd.service
 fi

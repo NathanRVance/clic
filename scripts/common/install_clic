@@ -18,7 +18,7 @@ cat $CLIC_ROOT/files/clic-nodesup | sed "s/USER/$user/g" | sed "s&KEY&/home/`who
 sudo chmod +x /usr/bin/clic-nodesup
 
 echo -e "\n/usr/bin/clic-remote-mount:"
-cat $CLIC_ROOT/files/clic-remote-mount | sed "s/ClOUD/$cloud/g" | sudo tee /usr/bin/clic-remote-mount
+cat $CLIC_ROOT/files/clic-remote-mount | sed "s/CLOUD/$cloud/g" | sudo tee /usr/bin/clic-remote-mount
 sudo chmod +x /usr/bin/clic-remote-mount
 
 #Create a service to start the clic daemon
