@@ -6,7 +6,7 @@ if [ $# -ne 3 ]; then
 fi
 
 localUser=$1
-user=$2
+remoteUser=$2
 hostname=$3
 
 opts="-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=error"
@@ -17,14 +17,14 @@ else
 fi
 
 # Sync hostnames with cloud computer
-ssh -i /home/$localUser/.ssh/id_rsa $opts $user@$hostname "sudo clic-sync-hosts `hostname -s` $ip"
+ssh -i /home/$localUser/.ssh/id_rsa $opts $remoteUser@$hostname "sudo clic-sync-hosts `hostname -s` $ip"
 
 # Set up a user in the cloud for ever user with a home directory in /home
-ssh -i /home/$localUser/.ssh/id_rsa $opts $user@$hostname "sudo rm /root/sshfs_uids; sudo rm /root/sshfs_gids"
-for user in `ls /home`; do
+ssh -i /home/$localUser/.ssh/id_rsa $opts $remoteUser@$hostname "sudo rm /root/sshfs_uids; sudo rm /root/sshfs_gids"
+for /ser in `ls /home`; do
 	uid="$(ls -n /home/ | grep " $user$" | awk '{print $3}')"
 	gid="$(ls -n /home/ | grep " $user$" | awk '{print $4}')"
-	ssh -i /home/$localUser/.ssh/id_rsa $opts $user@$hostname "if ! id $user &> /dev/null; then sudo useradd -m -s /bin/bash $user; fi; echo $user:$uid | sudo tee -a /root/sshfs_uids &> /dev/null; echo $user:$gid | sudo tee -a /root/sshfs_gids &> /dev/null"
+	ssh -i /home/$localUser/.ssh/id_rsa $opts $remoteUser@$hostname "if ! id $user &> /dev/null; then sudo useradd -m -s /bin/bash $user; fi; echo $user:$uid | sudo tee -a /root/sshfs_uids &> /dev/null; echo $user:$gid | sudo tee -a /root/sshfs_gids &> /dev/null"
 done
 
-ssh -i /home/$localUser/.ssh/id_rsa $opts $user@$hostname "sudo mkdir /.ssh; sudo mount --bind /home/$user/.ssh /.ssh; sudo sshfs -o ssh_command=\"ssh -i /.ssh/id_rsa\" $opts -o nonempty -o allow_other -o idmap=file -o nomap=ignore -o uidfile=/root/sshfs_uids -o gidfile=/root/sshfs_gids $localUser@`hostname -s`:/home /home && sudo mount --bind /.ssh /home/$user/.ssh &"
+ssh -i /home/$localUser/.ssh/id_rsa $opts $remoteUser@$hostname "sudo mkdir /.ssh; sudo mount --bind /home/$remoteUser/.ssh /.ssh; sudo sshfs -o ssh_command=\"ssh -i /.ssh/id_rsa\" $opts -o nonempty -o allow_other -o idmap=file -o nomap=ignore -o uidfile=/root/sshfs_uids -o gidfile=/root/sshfs_gids $localUser@`hostname -s`:/home /home && sudo mount --bind /.ssh /home/$remoteUser/.ssh &"
