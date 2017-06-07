@@ -21,7 +21,7 @@ ssh -i /home/$localUser/.ssh/id_rsa $opts $remoteUser@$hostname "sudo clic-sync-
 
 # Set up a user in the cloud for ever user with a home directory in /home
 ssh -i /home/$localUser/.ssh/id_rsa $opts $remoteUser@$hostname "sudo rm /root/sshfs_uids; sudo rm /root/sshfs_gids"
-for /ser in `ls /home`; do
+for user in `ls /home`; do
 	uid="$(ls -n /home/ | grep " $user$" | awk '{print $3}')"
 	gid="$(ls -n /home/ | grep " $user$" | awk '{print $4}')"
 	ssh -i /home/$localUser/.ssh/id_rsa $opts $remoteUser@$hostname "if ! id $user &> /dev/null; then sudo useradd -m -s /bin/bash $user; fi; echo $user:$uid | sudo tee -a /root/sshfs_uids &> /dev/null; echo $user:$gid | sudo tee -a /root/sshfs_gids &> /dev/null"
