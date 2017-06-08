@@ -21,7 +21,7 @@ ssh $opts $user@$namescheme "cat ~/.ssh/id_rsa.pub" >> ~/.ssh/authorized_keys
 
 # Test sshfs
 clic-remote-mount `whoami` $user $namescheme
-ssh $opts $user@$namescheme "touch ~/foo"
+ssh $opts $user@$namescheme "touch foo"
 if [ ! -e ~/foo ]; then
 	echo "Failed to create file remotely!"
 	exit 1
