@@ -24,7 +24,7 @@ sudo chmod +x /usr/bin/clic-remote-mount
 echo -e "\n/usr/bin/clic-copy-id:"
 cat $CLIC_ROOT/files/clic-copy-id | sudo tee /usr/bin/clic-copy-id
 sudo chmod +x /usr/bin/clic-copy-id
-sudo clic-copy-id --append
+sudo clic-copy-id --append -u `whoami` $user `whoami`
 
 #Create a service to start the clic daemon
 echo -e "\n/etc/systemd/system/clic.service:"

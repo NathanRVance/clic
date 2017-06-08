@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import argparse
 from pathlib import Path
 import os
@@ -7,7 +7,8 @@ import re
 parser = argparse.ArgumentParser(description='Copy public keys to cloud computers')
 parser.add_argument('-g', '--generate', action='store_true', help='generate a public key for users without one')
 parser.add_argument('-a', '--append', action='store_true', help='append keys to existing keys, possibly creating duplicates (default: replace)')
-parser.add_argument('users', metavar='USER', nargs='*', help='users to copy keys for (default: all)')
+parser.add_argument('-u', metavar=('LOCAL_USER', 'REMOTE_USER'), nargs=2, help='allow ssh from LOCAL_USER to REMOTE_USER')
+parser.add_argument('users', metavar='USER', nargs='*', help='allow ssh from each USER on localhost to USER on remotehost (if no -u, allows all users)')
 args = parser.parse_args()
 
 keys = ''
@@ -27,22 +28,28 @@ if args.append:
     else:
         keys = ''
 
+def formatKey(local, remote):
+    key = Path('/home/' + local + '/.ssh/id_rsa.pub')
+    if not key.is_file() and args.generate:
+        # Generate a key
+        print('generating for ' + local)
+        os.system('su - ' + local + ' -c "ssh-keygen -t rsa -N \'\' -f ~/.ssh/id_rsa"')
+    if key.is_file():
+        with open(str(key), 'r') as keyFile:
+            return remote + ":" + keyFile.read()
+
 users = args.users
-if len(users) == 0:
+if len(users) == 0 and not args.u:
     for user in Path('/home').iterdir():
         if user.is_dir():
             users.append(user.parts[-1])
+elif args.u:
+    keys += formatKey(args.u[0], args.u[1])
 
 for user in users:
-    if not Path('/home/' + user + '/.ssh/id_rsa.pub').is_file() and args.generate:
-        # Generate a key
-        print('generating for ' + user)
-        os.system('su - ' + user + ' -c "ssh-keygen -t rsa -N \'\' -f ~/.ssh/id_rsa"')
-    with Path('/home/' + user + '/.ssh/id_rsa.pub') as key:
-        if key.is_file():
-            with open(key, 'r') as keyFile:
-                keys += user + ":" + keyFile.read()
+    keys += formatKey(user, user)
 
+keys = keys.rstrip() # Trim trailing newline
 print(keys)
 
 os.system('gcloud compute project-info add-metadata --metadata=^DELIM^sshKeys="' + keys + '"')
