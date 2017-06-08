@@ -1,0 +1,48 @@
+#!/usr/bin/python
+import argparse
+from pathlib import Path
+import os
+import re
+
+parser = argparse.ArgumentParser(description='Copy public keys to cloud computers')
+parser.add_argument('-g', '--generate', action='store_true', help='generate a public key for users without one')
+parser.add_argument('-a', '--append', action='store_true', help='append keys to existing keys, possibly creating duplicates (default: replace)')
+parser.add_argument('users', metavar='USER', nargs='*', help='users to copy keys for (default: all)')
+args = parser.parse_args()
+
+keys = ''
+if args.append:
+    keys = os.popen('gcloud compute project-info describe').read()
+    match = re.search('key: sshKeys.*?kind:', keys, re.DOTALL)
+    if match:
+        keys = match.group(0)
+        keys = '\n'.join(keys.split('\n')[1:-1])
+        keys = re.sub('\|-?\s*', '', keys)
+        keys = re.sub('\s*value:\s*', '', keys)
+        keys = re.sub('\n\s*', '\n', keys)
+        keys = re.sub('\n(?=\S*@\S*)', ' ', keys)
+        keys = re.sub('\^DELIM\^', '', keys)
+        keys = re.sub(',', 'DELIM', keys)
+        keys += '\n'
+    else:
+        keys = ''
+
+users = args.users
+if len(users) == 0:
+    for user in Path('/home').iterdir():
+        if user.is_dir():
+            users.append(user.parts[-1])
+
+for user in users:
+    if not Path('/home/' + user + '/.ssh/id_rsa.pub').is_file() and args.generate:
+        # Generate a key
+        print('generating for ' + user)
+        os.system('su - ' + user + ' -c "ssh-keygen -t rsa -N \'\' -f ~/.ssh/id_rsa"')
+    with Path('/home/' + user + '/.ssh/id_rsa.pub') as key:
+        if key.is_file():
+            with open(key, 'r') as keyFile:
+                keys += user + ":" + keyFile.read()
+
+print(keys)
+
+os.system('gcloud compute project-info add-metadata --metadata=^DELIM^sshKeys="' + keys + '"')

@@ -88,5 +88,5 @@ sudo chown slurm:slurm /etc/slurm/slurm.key /etc/slurm/slurm.cert
 sudo chmod 400 /etc/slurm/slurm.key
 
 # Set up exports
-echo -e "\n/etc/exports:"
-cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
+#echo -e "\n/etc/exports:"
+#cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports

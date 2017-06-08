@@ -10,12 +10,12 @@ ssh $opts $user@$namescheme "rm -rf clic; git clone https://github.com/nathanrva
 #ssh $opts $user@$namescheme "sudo cp -f /home/$user/munge.key /etc/munge/munge.key && sudo chown munge:munge /etc/munge/munge.key && sudo chmod 400 /etc/munge/munge.key"
 # Copy over slurm.conf
 scp $opts /etc/slurm/slurm.conf $user@$namescheme:.
-ssh $opts $user@$namescheme "sudo cp -f /home/$user/slurm.conf /etc/slurm/slurm.conf && sudo chown root:root /etc/slurm/slurm.conf && sudo chmod 644 /etc/slurm/slurm.conf"
+ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.conf /etc/slurm/slurm.conf && sudo chown root:root /etc/slurm/slurm.conf && sudo chmod 644 /etc/slurm/slurm.conf"
 # Copy over slurm keys
 sudo scp $opts -i ~/.ssh/id_rsa /etc/slurm/slurm.key $user@$namescheme:.
-ssh $opts $user@$namescheme "sudo cp -f /home/$user/slurm.key /etc/slurm/slurm.key && sudo chown slurm:slurm /etc/slurm/slurm.key && sudo chmod 400 /etc/slurm/slurm.conf"
+ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.key /etc/slurm/slurm.key && sudo chown slurm:slurm /etc/slurm/slurm.key && sudo chmod 400 /etc/slurm/slurm.conf"
 scp $opts /etc/slurm/slurm.cert $user@$namescheme:.
-ssh $opts $user@$namescheme "sudo cp -f /home/$user/slurm.cert /etc/slurm/slurm.cert && sudo chown root:root /etc/slurm/slurm.cert && sudo chmod 644 /etc/slurm/slurm.cert"
+ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.cert /etc/slurm/slurm.cert && sudo chown root:root /etc/slurm/slurm.cert && sudo chmod 644 /etc/slurm/slurm.cert"
 # Copy back ssh key
 ssh $opts $user@$namescheme "cat ~/.ssh/id_rsa.pub" >> ~/.ssh/authorized_keys
 

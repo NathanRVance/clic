@@ -13,7 +13,3 @@ fi
 if [ ! -e ~/.ssh/id_rsa ]; then
 	ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa
 fi
-
-echo "Allowing passwordless ssh from user account `whoami` on this machine to $user on cloud instances"
-gcloud compute project-info add-metadata --metadata=sshKeys="$(echo "$(gcloud compute project-info describe | grep -Pzo '(?s)key: sshKeys.*?kind:' | tail -n +2 | head -n -1 | perl -pe 's/\|-?\s*//' | sed 's/\s*value:\s*//' | sed 's/^\s*//' | sed 'N;s/\n\(\S*@\S*\)/ \1/')
-$user:`cat ~/.ssh/id_rsa.pub`" | sed '/^\s*$/d')"

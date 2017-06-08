@@ -21,6 +21,11 @@ echo -e "\n/usr/bin/clic-remote-mount:"
 cat $CLIC_ROOT/files/clic-remote-mount | sed "s/CLOUD/$cloud/g" | sudo tee /usr/bin/clic-remote-mount
 sudo chmod +x /usr/bin/clic-remote-mount
 
+echo -e "\n/usr/bin/clic-copy-id:"
+cat $CLIC_ROOT/files/clic-copy-id | sudo tee /usr/bin/clic-copy-id
+sudo chmod +x /usr/bin/clic-copy-id
+sudo clic-copy-id --append
+
 #Create a service to start the clic daemon
 echo -e "\n/etc/systemd/system/clic.service:"
 cat $CLIC_ROOT/files/clic.service | sudo tee /etc/systemd/system/clic.service
