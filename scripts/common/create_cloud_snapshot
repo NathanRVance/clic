@@ -21,8 +21,11 @@ ssh $opts $user@$namescheme "if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t r
 ssh $opts $user@$namescheme "cat ~/.ssh/id_rsa.pub" >> ~/.ssh/authorized_keys
 
 # Test sshfs
-clic-remote-mount `whoami` $user $namescheme
-ssh $opts $user@$namescheme "touch foo"
+sudo useradd -m -s /bin/bash $user
+sudo clic-copy-id --append --generate
+sudo su - $user -c "ssh $opts $namescheme \"cat ~/.ssh/id_rsa.pub\" >> ~/.ssh/authorized_keys"
+clic-remote-mount $user@$namescheme
+ssh $opts $namescheme "touch foo"
 if [ ! -e ~/foo ]; then
 	echo "Failed to create file remotely!"
 	exit 1
