@@ -229,7 +229,7 @@ resolveIPs() {
 
 nodeInit() {
 	local num=$1
-	clic-remote-mount REMOTEUSER USER NAMESCHEME$num # This command handles /etc/hosts modification for compute nodes
+	clic-remote-mount USER@NAMESCHEME$num
 }
 
 if [ "`hostname`" == "NAMESCHEME" ] || [ "CLOUD" == "false" ]; then

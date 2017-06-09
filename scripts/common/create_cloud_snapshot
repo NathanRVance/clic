@@ -30,7 +30,7 @@ if [ ! -e ~/foo ]; then
 	echo "Failed to create file remotely!"
 	exit 1
 fi
-rm ~/foo
+rm -f ~/foo
 
 # Stop and snapshot the instance
 echo "Stopping $namescheme"
