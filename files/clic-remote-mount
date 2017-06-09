@@ -6,12 +6,12 @@ import re
 from pathlib import Path
 from pwd import getpwnam
 
-parser = argparse.ArgumentParser(description='Remote mount home directory')
-parser.add_argument('userhost', metavar='USER@HOST', nargs=1, help='USER with administrative privilages at HOST to mount /home on')
+parser = argparse.ArgumentParser(description='Remote mount home directory (NOTE: preserves remote /home/*/.ssh)')
+parser.add_argument('userhost', metavar='USER@HOST', nargs=1, help='USER has passwordless sudo on HOST, on which we will mount /home')
 args = parser.parse_args()
 
 #Error checking
-if not re.search('\w+@\w+', args.userhost[0]):
+if not re.search('^\w+@\w+$', args.userhost[0]):
     parser.error('incorrect formatting: ' + args.userhost[0])
 
 ip = get('https://api.ipify.org').text
