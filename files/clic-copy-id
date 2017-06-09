@@ -6,9 +6,9 @@ import re
 
 parser = argparse.ArgumentParser(description='Copy public keys to cloud computers')
 parser.add_argument('-g', '--generate', action='store_true', help='generate a public key for users without one')
-parser.add_argument('-a', '--append', action='store_true', help='append keys to existing keys, possibly creating duplicates (default: replace)')
+parser.add_argument('-a', '--append', action='store_true', help='append keys to existing keys (default: replace)')
 parser.add_argument('-u', metavar=('LOCAL_USER', 'REMOTE_USER'), nargs=2, help='allow ssh from LOCAL_USER to REMOTE_USER')
-parser.add_argument('users', metavar='USER', nargs='*', help='allow ssh from each USER on localhost to USER on remotehost (if no -u, allows all users)')
+parser.add_argument('users', metavar='USER', nargs='*', help='allow ssh from USER on localhost to USER on remotehost (default: if called with no -u, allows all users with home directories in /home)')
 args = parser.parse_args()
 
 keys = ''
@@ -28,7 +28,8 @@ if args.append:
     else:
         keys = ''
 
-def formatKey(local, remote):
+def addKey(local, remote):
+    global keys
     key = Path('/home/' + local + '/.ssh/id_rsa.pub')
     if not key.is_file() and args.generate:
         # Generate a key
@@ -36,7 +37,10 @@ def formatKey(local, remote):
         os.system('su - ' + local + ' -c "ssh-keygen -t rsa -N \'\' -f ~/.ssh/id_rsa"')
     if key.is_file():
         with open(str(key), 'r') as keyFile:
-            return remote + ":" + keyFile.read()
+            newkey = remote + ":" + keyFile.read()
+            if not re.search(re.escape(newkey.rstrip()), keys):
+                keys += newkey
+
 
 users = args.users
 if len(users) == 0 and not args.u:
@@ -44,10 +48,10 @@ if len(users) == 0 and not args.u:
         if user.is_dir():
             users.append(user.parts[-1])
 elif args.u:
-    keys += formatKey(args.u[0], args.u[1])
+    addKey(args.u[0], args.u[1])
 
 for user in users:
-    keys += formatKey(user, user)
+    addKey(user, user)
 
 keys = keys.rstrip() # Trim trailing newline
 print(keys)

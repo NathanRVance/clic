@@ -1,30 +1,33 @@
-#!/bin/bash
+#!/usr/bin/python3
+import argparse
+from requests import get
+import os
+import re
+from pathlib import Path
+from pwd import getpwnam
 
-if [ $# -ne 3 ]; then
-	echo "Usage: clic-remote-mount localUser remoteUser remoteHostname"
-	exit 1
-fi
+parser = argparse.ArgumentParser(description='Remote mount home directory')
+parser.add_argument('userhost', metavar='USER@HOST', nargs=1, help='USER with administrative privilages at HOST to mount /home on')
+args = parser.parse_args()
 
-localUser=$1
-remoteUser=$2
-hostname=$3
+#Error checking
+if not re.search('\w+@\w+', args.userhost[0]):
+    parser.error('incorrect formatting: ' + args.userhost[0])
 
-opts="-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=error"
-if [ "CLOUD" == "true" ]; then
-	ip="`gcloud compute instances list | grep "clic " | rev | awk '{print $3}' | rev`"
-else
-	ip="`dig +short myip.opendns.com @resolver1.opendns.com`"
-fi
+ip = get('https://api.ipify.org').text
+[user, host] = args.userhost[0].split('@')
+hostname = os.popen('hostname -s').read()
+sshOpts = '-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=error'
 
-# Sync hostnames with cloud computer
-ssh -i /home/$localUser/.ssh/id_rsa $opts $remoteUser@$hostname "sudo clic-sync-hosts `hostname -s` $ip"
+os.system('clic-copy-id --append --generate')
+os.system('ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo clic-sync-hosts {3} {4}"'.format(user, host, sshOpts, hostname, ip))
+os.system('ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo rm /root/sshfs_uids /root/sshfs_gids"'.format(user, host, sshOpts))
 
-# Set up a user in the cloud for ever user with a home directory in /home
-ssh -i /home/$localUser/.ssh/id_rsa $opts $remoteUser@$hostname "sudo rm /root/sshfs_uids; sudo rm /root/sshfs_gids"
-for user in `ls /home`; do
-	uid="$(ls -n /home/ | grep " $user$" | awk '{print $3}')"
-	gid="$(ls -n /home/ | grep " $user$" | awk '{print $4}')"
-	ssh -i /home/$localUser/.ssh/id_rsa $opts $remoteUser@$hostname "if ! id $user &> /dev/null; then sudo useradd -m -s /bin/bash $user; fi; echo $user:$uid | sudo tee -a /root/sshfs_uids &> /dev/null; echo $user:$gid | sudo tee -a /root/sshfs_gids &> /dev/null"
-done
+for path in Path('/home').iterdir():
+    if path.is_dir():
+        localUser = path.parts[-1]
+        uid = getpwnam(localUser).pw_uid
+        gid = getpwnam(localUser)[2])
+        os.system('ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "echo {0}:{3} | sudo tee -a /root/sshfs_uids &> /dev/null; echo {0}:{4} | sudo tee -a /root/sshfs_gids &> /dev/null"'.format(user, host, sshOpts, uid, gid))
 
-ssh -i /home/$localUser/.ssh/id_rsa $opts $remoteUser@$hostname "sudo mkdir /bind-home; sudo mount --bind /home /bind-home; sudo sshfs -o ssh_command=\"ssh -i /bind-home/$remoteUser/.ssh/id_rsa\" $opts -o nonempty -o allow_other -o idmap=file -o nomap=ignore -o uidfile=/root/sshfs_uids -o gidfile=/root/sshfs_gids $localUser@`hostname -s`:/home /home && { for user in ls /bind-home; do sudo mount --bind /bind-home/$user/.ssh /home/$user/.ssh; done; } &"
+os.system('ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo mkdir /bind-root; sudo mount --bind / /bind-root; sudo sshfs -o ssh_command=\"ssh -i /bind-root/home/{0}/.ssh/id_rsa\" {2} -o nonempty -o allow_other -o idmap=file -o nomap=ignore -o uidfile=/root/sshfs_uids -o gidfile=/root/sshfs_gids {0}@{3}:/home /home && ( for user in ls /bind-root/home; do sudo mount --bind /bind-root/home/\$user/.ssh /home/$user/.ssh; done ) &"'.format(user, host, sshOpts, hostname))

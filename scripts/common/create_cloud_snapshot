@@ -17,6 +17,7 @@ ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.key /etc/slurm/slurm.k
 scp $opts /etc/slurm/slurm.cert $user@$namescheme:.
 ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.cert /etc/slurm/slurm.cert && sudo chown root:root /etc/slurm/slurm.cert && sudo chmod 644 /etc/slurm/slurm.cert"
 # Copy back ssh key
+ssh $opts $user@$namescheme "if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa; fi"
 ssh $opts $user@$namescheme "cat ~/.ssh/id_rsa.pub" >> ~/.ssh/authorized_keys
 
 # Test sshfs
