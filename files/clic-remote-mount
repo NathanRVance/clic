@@ -19,7 +19,7 @@ ip = get('https://api.ipify.org').text
 hostname = os.popen('hostname -s').read()
 sshOpts = '-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=error'
 
-os.system('clic-copy-id --append --generate')
+os.system('sudo clic-copy-id --append --generate')
 os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo clic-sync-hosts {3} {4}"'.format(user, host, sshOpts, hostname, ip))
 os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo rm /root/sshfs_uids /root/sshfs_gids"'.format(user, host, sshOpts))
 
