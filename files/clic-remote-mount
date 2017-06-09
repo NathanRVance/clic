@@ -16,7 +16,7 @@ if not re.search('\w+@\w+', args.userhost[0]):
 
 ip = get('https://api.ipify.org').text
 [user, host] = args.userhost[0].split('@')
-hostname = os.popen('hostname -s').read()
+hostname = os.popen('hostname -s').read().strip()
 sshOpts = '-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=error'
 
 os.system('sudo clic-copy-id --append --generate')
@@ -28,6 +28,6 @@ for path in Path('/home').iterdir():
         localUser = path.parts[-1]
         uid = getpwnam(localUser).pw_uid
         gid = getpwnam(localUser)[2]
-        os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "echo {0}:{3} | sudo tee -a /root/sshfs_uids &> /dev/null; echo {0}:{4} | sudo tee -a /root/sshfs_gids &> /dev/null"'.format(user, host, sshOpts, uid, gid))
+        os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "echo {3}:{4} | sudo tee -a /root/sshfs_uids &> /dev/null; echo {3}:{5} | sudo tee -a /root/sshfs_gids &> /dev/null"'.format(user, host, sshOpts, localUser, uid, gid))
 
 os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo mkdir /bind-root; sudo mount --bind / /bind-root; sudo sshfs -o ssh_command=\"ssh -i /bind-root/home/{0}/.ssh/id_rsa\" {2} -o nonempty -o allow_other -o idmap=file -o nomap=ignore -o uidfile=/root/sshfs_uids -o gidfile=/root/sshfs_gids {0}@{3}:/home /home && ( for user in ls /bind-root/home; do sudo mount --bind /bind-root/home/\$user/.ssh /home/$user/.ssh; done ) &"'.format(user, host, sshOpts, hostname))
