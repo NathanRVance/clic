@@ -15,9 +15,9 @@ CLIC creates a virtual, automatically resizing cluster in a cloud environment (c
 2. Execute the `install` script  
 &nbsp;&nbsp;`./install --user USER --namescheme NAME [--cloud]`  
 where
-  * USER is a user on the GCE instance
-  * NAME is the hostname of the GCE instance
-  * The `--cloud` flag is set if `install` is being run from NAME in GCE
+    * USER is a user on the GCE instance
+    * NAME is the hostname of the GCE instance
+    * The `--cloud` flag is set if `install` is being run from NAME in GCE
 
 3. If installing using a cloud headnode, shut down, snapshot, and re-start the headnode.
 

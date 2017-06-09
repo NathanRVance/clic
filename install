@@ -8,6 +8,7 @@ usage() {
 	echo "-n --namescheme <name>   use <name> as the base name for cloud instances"
 	echo "-c --cloud               installing to a cloud computer"
 	echo "-s                       scripted, don't ask for confirmation"
+	echo "--skip_slurm             don't install slurm on this machine"
 	echo "-h --help                print this help message"
 }
 
@@ -15,7 +16,8 @@ export user=`whoami`
 export namescheme=`hostname`
 export cloud=false
 export script=false
-ARGS=`getopt -n clic-install -o hscn:u: --long help,cloud,namescheme:,user: -- "$@"`
+export skip_slurm=false
+ARGS=`getopt -n clic-install -o hscn:u: --long help,cloud,skip_slurm,namescheme:,user: -- "$@"`
 if [ $? != 0 ] ; then
         usage
         exit 1
@@ -43,6 +45,10 @@ while true; do
                         export user=$2
                         shift 2
                         ;;
+		--skip_slurm)
+			export skip_slurm=true
+			shift
+			;;
                 --)
                         shift
                         break
@@ -80,7 +86,9 @@ echo "Installing for $OS"
 command -v gcloud >/dev/null 2>&1 || $CLIC_ROOT/scripts/$OS/setup_gcloud
 $CLIC_ROOT/scripts/common/setup_gcloud
 
-$CLIC_ROOT/scripts/$OS/install_slurm
+if ! $skip_slurm; then
+	$CLIC_ROOT/scripts/$OS/install_slurm
+fi	
 $CLIC_ROOT/scripts/common/install_clic
 if [ "$cloud" == false ]; then
 	$CLIC_ROOT/scripts/common/create_cloud_snapshot
