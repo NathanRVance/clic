@@ -105,8 +105,9 @@ def mainLoop():
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node, 'state=down', 'reason="Error"'])
             log('ERROR: Node {} deleted outside of clic!'.format(node))
         # We think they're running, and so does the cloud, but slurm doesn't
-        for node in getNodesInState('R') + cloudRunning - slurmRunning and timeInState(node) > waitTime:
-            log('ERROR: Node {} is unresponsive!'.format(node))
+        for node in getNodesInState('R') | cloudRunning - slurmRunning:
+            if timeInState(node) > waitTime:
+                log('ERROR: Node {} is unresponsive!'.format(node))
         # Nodes are running but aren't registered:
         for node in getNodesInState('') & cloudRunning:
             log('ERROR: Encountered unregistered node {}!'.format(node))
