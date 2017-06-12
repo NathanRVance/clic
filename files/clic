@@ -54,7 +54,11 @@ def create(numToCreate):
     if numToCreate < 0:
         return
     existingDisks = set(os.popen('gcloud compute disks list | tail -n+2 | awk \'{print $1}\'').read().split())
-    for node in list(getNodesInState('') - existingDisks)[0:numToCreate]:
+    freeNodes = getNodesInState('') - existingDisks
+    for _ in range(numToCreate):
+        if len(freeNodes) == 0:
+            return
+        node = freeNodes.pop()
         setState(node, 'C')
         log('Creating {}\n'.format(node))
         subprocess.Popen('gcloud compute disks create {0} --size 10 --source-snapshot {1} &> /dev/null && gcloud compute instances create {0} --machine-type "n1-standard-1" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" &> /dev/null || if [ $? -eq 1 ]; then echo "ERROR: Failed to create {0}" | tee -a {2}; fi'.format(node, namescheme, logfile), shell=True)
