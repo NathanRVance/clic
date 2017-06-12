@@ -29,9 +29,9 @@ sudo clic-copy-id --append -u `whoami` $user `whoami`
 #Create a service to start the clic daemon
 echo -e "\n/etc/systemd/system/clic.service:"
 if $cloud; then
-	cat $CLIC_ROOT/files/clic.service | sed "s/CLOUD //g" | sed "s/USER/$user/g" | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/systemd/system/clic.service
-else
 	cat $CLIC_ROOT/files/clic.service | sed "s/CLOUD/--cloud/g" | sed "s/USER/$user/g" | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/systemd/system/clic.service
+else
+	cat $CLIC_ROOT/files/clic.service | sed "s/CLOUD //g" | sed "s/USER/$user/g" | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/systemd/system/clic.service
 fi
 sudo systemctl enable clic.service
 sudo systemctl restart clic.service
