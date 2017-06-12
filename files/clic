@@ -138,6 +138,7 @@ def mainLoop():
         
         # Add and delete nodes
         #rJobs = os.popen('squeue -h -t r,cg,cf -o %A').read().split()
+        numIdle = parseInt(os.popen('sinfo -h -r -o %A | cut -d "/" -f 2').read())
         qJobs = os.popen('squeue -h -t pd -o %A').read().split()
         # Delete dequeued jobs
         for job in jobs:
@@ -147,7 +148,6 @@ def mainLoop():
         for job in qJobs:
             if job not in [j.num for j in jobs]:
                 jobs.append(Job(job))
-        numIdle = parseInt(os.popen('sinfo -h -r -o %A | cut -d "/" -f 2').read())
         
         jobsWaitingTooLong = sum(1 for job in jobs if job.timeWaiting() > waitTime)
         numCreating = len(getNodesInState('C'))
