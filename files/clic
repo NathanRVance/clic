@@ -25,6 +25,7 @@ states = [''] * args.max
 stateTimes = [time.time()] * maxNodeNum
 
 def log(message):
+    message = message.strip() + '\n'
     with open(logfile, 'a') as log:
         log.write(message)
     print(message)
@@ -60,8 +61,8 @@ def create(numToCreate):
             return
         node = freeNodes.pop()
         setState(node, 'C')
-        log('Creating {}\n'.format(node))
-        subprocess.Popen('gcloud compute disks create {0} --size 10 --source-snapshot {1} &> /dev/null && gcloud compute instances create {0} --machine-type "n1-standard-1" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" &> /dev/null || if [ $? -eq 1 ]; then echo "ERROR: Failed to create {0}" | tee -a {2}; fi'.format(node, namescheme, logfile), shell=True)
+        log('Creating {}'.format(node))
+        subprocess.Popen('gcloud compute disks create {0} --size 10 --source-snapshot {1} &> /dev/null && gcloud compute instances create {0} --machine-type "n1-standard-1" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" &> /dev/null || echo "ERROR: Failed to create {0}" | tee -a {2}'.format(node, namescheme, logfile), shell=True)
 
 def delete(numToDelete):
     if numToDelete < 0:
@@ -89,14 +90,14 @@ def mainLoop():
                 setState(node, 'R')
                 subprocess.Popen(['scontrol', 'update', 'nodename=' + node, 'state=resume'])
                 subprocess.Popen(['clic-remote-mount', user + '@' + node])
-                log('Node {} came up\n'.format(node))
+                log('Node {} came up'.format(node))
         # Nodes that were deleting and now are gone:
         nodesWentDown = False
         for node in getNodesInState('D') - cloudAll:
             nodesWentDown = True
             setState(node, '')
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node, 'state=down', 'reason="Deleted"'])
-            log('Node {} went down\n'.format(node))
+            log('Node {} went down'.format(node))
         if nodesWentDown:
             # There's a chance they'll come up later with different IPs. Restart slurmctld to avoid errors.
             subprocess.Popen(['systemctl', 'restart', 'slurmctld'])
