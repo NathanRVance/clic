@@ -74,6 +74,7 @@ def create(numToCreate):
     freeNodes = getNodesInState('') - existingDisks
     for node in sorted(freeNodes, key=lambda node: node.num)[0:int(numToCreate)]:
         node.setState('C')
+        subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Creating"'])
         log('Creating {}'.format(node.name))
         subprocess.Popen('gcloud compute disks create {0} --size 10 --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-standard-1" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {2}'.format(node.name, namescheme, logfile), shell=True)
 
@@ -97,11 +98,14 @@ def mainLoop():
         cloudAll = {getNode(nodeName) for nodeName in os.popen('clic-nodesup').read().split() if validName.search(nodeName)}
         subprocess.Popen('clic-sync-hosts').wait()
         # Nodes that were creating and now are running:
+        pids = []
         for node in cloudRunning:
             if node.state == 'C':
                 node.setState('R')
-                subprocess.Popen('clic-remote-mount {0}@{1}; sleep 5; scontrol update nodename={1} state=resume'.format(user, node.name), shell=True)
+                pids.append(subprocess.Popen('clic-remote-mount {0}@{1}; sleep 5; scontrol update nodename={1} state=resume'.format(user, node.name), shell=True))
                 log('Node {} came up'.format(node.name))
+        for pid in pids:
+            pid.wait();
         # Nodes that were deleting and now are gone:
         nodesWentDown = False
         for node in getNodesInState('D') - cloudAll:
@@ -146,8 +150,10 @@ def mainLoop():
         numIdle = parseInt(os.popen('sinfo -h -r -o %A | cut -d "/" -f 2').read())
         
         jobsWaitingTooLong = sum(1 for job in jobs if job.timeWaiting() > waitTime)
-        nodesToCreate = int((jobsWaitingTooLong - len(getNodesInState('C')) + 1) / 2 - numIdle)
-        if len(getNodesInState('R')) + len(getNodesInState('C')) == 0 and len(jobs) > 0:
+        numCreating = len(getNodesInState('C'))
+        numRunning = len(getNodesInState('R'))
+        nodesToCreate = int((jobsWaitingTooLong - numCreating) + 1) / 2 - numIdle)
+        if numCreating + numRunning == 0 and len(jobs) > 0:
             nodesToCreate = (len(jobs) + 1) / 2
         create(nodesToCreate)
        
