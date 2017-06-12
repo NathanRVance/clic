@@ -62,7 +62,7 @@ def create(numToCreate):
         node = freeNodes.pop()
         setState(node, 'C')
         log('Creating {}'.format(node))
-        subprocess.Popen('gcloud compute disks create {0} --size 10 --source-snapshot {1} &> /dev/null && gcloud compute instances create {0} --machine-type "n1-standard-1" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" &> /dev/null || echo "ERROR: Failed to create {0}" | tee -a {2}'.format(node, namescheme, logfile), shell=True)
+        subprocess.Popen('gcloud compute disks create {0} --size 10 --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-standard-1" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {2}'.format(node, namescheme, logfile), shell=True)
 
 def delete(numToDelete):
     if numToDelete < 0:
@@ -71,7 +71,7 @@ def delete(numToDelete):
     for node in idleNodes[-numToDelete:]:
         setState(node, 'D')
         subprocess.Popen(['scontrol', 'update', 'nodename=' + node, 'state=drain', 'reason="Deleting"'])
-        subprocess.Popen('echo Y | gcloud compute instances delete {} &> /dev/null'.format(node), shell=True)
+        subprocess.Popen('echo Y | gcloud compute instances delete {}'.format(node), shell=True)
 
 def mainLoop():
     queuedTimes = {}
