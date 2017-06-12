@@ -21,7 +21,7 @@ namescheme = args.namescheme[0]
 logfile = args.logfile
 maxNodeNum = args.max - 1
 nodeNumPadding = len(str(maxNodeNum))
-states = [''] * maxNodeNum
+states = [''] * args.max
 stateTimes = [time.time()] * maxNodeNum
 
 def log(message):
@@ -75,7 +75,7 @@ def mainLoop():
     while True:
         subprocess.Popen('clic-sync-hosts')
         # Start with some book keeping
-        validName = re.compile(namescheme + '\d{' + nodeNumPadding + '}')
+        validName = re.compile(namescheme + '\d{' + str(nodeNumPadding) + '}')
         slurmRunning = {node for node in os.popen('sinfo -h -N -r -o %N').read().split() if validName.search(node)}
         cloudRunning = {node for node in os.popen('clic-nodesup -r').read().split() if validName.search(node)}
         cloudAll = {node for node in os.popen('clic-nodesup').read().split() if validName.search(node)}
