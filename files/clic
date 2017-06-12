@@ -151,10 +151,13 @@ def mainLoop():
         
         jobsWaitingTooLong = sum(1 for job in jobs if job.timeWaiting() > waitTime)
         numCreating = len(getNodesInState('C'))
-        numRunning = len(getNodesInState('R'))
+        running = getNodesInState('R')
+        for node in running:
+            if node.timeInState() < waitTime:
+                numIdle += 1
         nodesToCreate = int((jobsWaitingTooLong - numCreating + 1) / 2 - numIdle)
-        if numCreating + numRunning + numIdle == 0 and len(jobs) > 0:
-            nodesToCreate = (len(jobs) + 1) / 2
+        if numCreating + len(running) + numIdle == 0 and len(jobs) > 0:
+            nodesToCreate = int((len(jobs) + 1) / 2)
         create(nodesToCreate)
        
         if numIdle > 0:
