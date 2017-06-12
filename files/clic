@@ -88,8 +88,10 @@ def mainLoop():
         for node in cloudRunning:
             if getState(node) == 'C':
                 setState(node, 'R')
-                subprocess.Popen(['scontrol', 'update', 'nodename=' + node, 'state=resume'])
-                subprocess.Popen(['clic-remote-mount', user + '@' + node])
+                pid = subprocess.Popen(['clic-remote-mount', user + '@' + node])
+                pid.wait()
+                pid = subprocess.Popen(['scontrol', 'update', 'nodename=' + node, 'state=resume'])
+                pid.wait()
                 log('Node {} came up'.format(node))
         # Nodes that were deleting and now are gone:
         nodesWentDown = False
@@ -109,8 +111,8 @@ def mainLoop():
             setState(node, '')
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node, 'state=down', 'reason="Error"'])
             log('ERROR: Node {} deleted outside of clic!'.format(node))
-        # We think they're running, and so does the cloud, but slurm doesn't
-        for node in getNodesInState('R') | cloudRunning - slurmRunning:
+        # We think they're running, but slurm doesn't
+        for node in getNodesInState('R') - slurmRunning:
             if timeInState(node) > waitTime:
                 log('ERROR: Node {} is unresponsive!'.format(node))
         # Nodes are running but aren't registered:
@@ -144,8 +146,6 @@ def mainLoop():
         lastCallTime = time.time()
 
 
-pid = subprocess.Popen(['echo', '>', logfile])
-pid.wait()
 if os.popen('hostname -s').read() == namescheme or not args.cloud:
     # This is the head node
     log('Starting slurmctld.service')
