@@ -21,6 +21,7 @@ namescheme = args.namescheme[0]
 logfile = args.logfile
 maxNodeNum = args.max - 1
 nodeNumPadding = len(str(maxNodeNum))
+validName = re.compile('^' + namescheme + '\d{' + str(nodeNumPadding) + '}$')
 
 def parseInt(value):
     try:
@@ -69,7 +70,7 @@ def getNodesInState(state):
 def create(numToCreate):
     if numToCreate < 0:
         return
-    existingDisks = {getNode(nodeName) for nodeName in os.popen('gcloud compute disks list | tail -n+2 | awk \'{print $1}\'').read().split()}
+    existingDisks = {getNode(nodeName) for nodeName in os.popen('gcloud compute disks list | tail -n+2 | awk \'{print $1}\'').read().split() if validName.search(nodeName)}
     freeNodes = getNodesInState('') - existingDisks
     for node in sorted(freeNodes)[0:int(numToCreate)]:
         node.setState('C')
@@ -79,7 +80,7 @@ def create(numToCreate):
 def delete(numToDelete):
     if numToDelete <= 0:
         return
-    idleNodes = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep "idle" | awk \'{print $2}\'').read().split()]
+    idleNodes = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep "idle" | awk \'{print $2}\'').read().split() if validName.search(nodeName)]
     for node in idleNodes[-int(numToDelete):]:
         node.setState('D')
         subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
@@ -91,7 +92,6 @@ def mainLoop():
     while True:
         subprocess.Popen('clic-sync-hosts')
         # Start with some book keeping
-        validName = re.compile(namescheme + '\d{' + str(nodeNumPadding) + '}')
         slurmRunning = {getNode(nodeName) for nodeName in os.popen('sinfo -h -N -r -o %N').read().split() if validName.search(nodeName)}
         cloudRunning = {getNode(nodeName) for nodeName in os.popen('clic-nodesup -r').read().split() if validName.search(nodeName)}
         cloudAll = {getNode(nodeName) for nodeName in os.popen('clic-nodesup').read().split() if validName.search(nodeName)}
