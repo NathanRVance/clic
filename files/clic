@@ -160,7 +160,7 @@ def mainLoop():
             nodesToCreate = int((len(jobs) + 1) / 2)
         create(nodesToCreate)
        
-        if numIdle > 0:
+        if numIdle > 0 and len(jobs) == 0:
             if idleTime == 0:
                 idleTime = 1 # We want to do at least one full cycle
             else:
