@@ -144,9 +144,10 @@ def mainLoop():
         lastCallTime = time.time()
 
 
+pid = subprocess.Popen(['echo', '>', logfile])
+pid.wait()
 if os.popen('hostname -s').read() == namescheme or not args.cloud:
     # This is the head node
-    os.popen('rm {0}; touch {0}'.format(logfile))
     log('Starting slurmctld.service')
     subprocess.Popen(['systemctl', 'restart', 'slurmctld.service'])
     if args.cloud:
@@ -157,4 +158,5 @@ if os.popen('hostname -s').read() == namescheme or not args.cloud:
 else:
     # This is a compute node
     log('Starting slurmd.service')
-    subprocess.Popen(['systemctl', 'restart', 'slurmd.service'])
+    pid = subprocess.Popen(['systemctl', 'restart', 'slurmd.service'])
+    pid.wait()
