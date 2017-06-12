@@ -45,7 +45,7 @@ def getState(nodeName):
     return states[parseInt(nodeName[-nodeNumPadding:])]
 
 def getNodesInState(state):
-    return {namescheme + nodeNum.zfill(nodeNumPadding) for nodeNum in range(maxNodeNum + 1) if states[nodeNum] == state}
+    return {namescheme + str(nodeNum).zfill(nodeNumPadding) for nodeNum in range(maxNodeNum + 1) if states[nodeNum] == state}
 
 def timeInState(nodeName):
     return time.time() - stateTimes[parseInt(nodeName[-nodeNumPadding:])]
