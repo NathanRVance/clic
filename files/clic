@@ -100,8 +100,7 @@ def mainLoop():
         for node in cloudRunning:
             if node.state == 'C':
                 node.setState('R')
-                subprocess.Popen('clic-remote-mount {0}@{1}'.format(user, node.name), shell=True).wait()
-                subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume']).wait()
+                subprocess.Popen('clic-remote-mount {0}@{1}; sleep 5; scontrol update nodename={1} state=resume'.format(user, node.name), shell=True)
                 log('Node {} came up'.format(node.name))
         # Nodes that were deleting and now are gone:
         nodesWentDown = False
