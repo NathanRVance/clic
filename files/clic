@@ -129,7 +129,7 @@ def mainLoop():
             if not job in queuedTimes:
                 queuedTimes[job] = time.time()
         jobsWaitingTooLong = sum(time.time() - queuedTimes[job] > waitTime for job in qJobs)
-        nodesToCreate = (jobsWaitingTooLong - len(getNodesInState('C')) + 1) / 2 - numIdle
+        nodesToCreate = int((jobsWaitingTooLong - len(getNodesInState('C')) + 1) / 2 - numIdle)
         create(nodesToCreate)
        
         if numIdle > 0:
