@@ -22,6 +22,12 @@ logfile = args.logfile
 maxNodeNum = args.max - 1
 nodeNumPadding = len(str(maxNodeNum))
 
+def parseInt(value):
+    try:
+        return int(float(value))
+    except:
+        return 0
+
 class Node:
     def __init__(self, name):
         self.name = name
@@ -56,12 +62,6 @@ def log(message):
     with open(logfile, 'a') as log:
         log.write(message)
     print(message)
-
-def parseInt(value):
-    try:
-        return int(float(value))
-    except:
-        return 0
 
 def getNodesInState(state):
     return {node for node in nodes if node.state == state}
