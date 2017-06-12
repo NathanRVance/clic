@@ -3,8 +3,7 @@ Description=CLIC: CLuster In the Cloud
 After=network.target
 
 [Service]
-Type=forking
-ExecStart=/usr/bin/clic
+ExecStart=/usr/bin/clic CLOUD USER NAMESCHEME
 
 [Install]
 WantedBy=multi-user.target
