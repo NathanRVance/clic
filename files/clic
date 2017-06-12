@@ -56,19 +56,16 @@ def create(numToCreate):
         return
     existingDisks = set(os.popen('gcloud compute disks list | tail -n+2 | awk \'{print $1}\'').read().split())
     freeNodes = getNodesInState('') - existingDisks
-    for _ in range(numToCreate):
-        if len(freeNodes) == 0:
-            return
-        node = freeNodes.pop()
+    for node in sorted(freeNodes)[0:int(numToCreate)]:
         setState(node, 'C')
         log('Creating {}'.format(node))
         subprocess.Popen('gcloud compute disks create {0} --size 10 --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-standard-1" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {2}'.format(node, namescheme, logfile), shell=True)
 
 def delete(numToDelete):
-    if numToDelete < 0:
+    if numToDelete <= 0:
         return
     idleNodes = os.popen('sinfo -o "%t %n" | grep "idle" | awk \'{print $2}\'').read().split()
-    for node in idleNodes[-numToDelete:]:
+    for node in idleNodes[-int(numToDelete):]:
         setState(node, 'D')
         subprocess.Popen(['scontrol', 'update', 'nodename=' + node, 'state=drain', 'reason="Deleting"'])
         subprocess.Popen('echo Y | gcloud compute instances delete {}'.format(node), shell=True)
@@ -138,7 +135,7 @@ def mainLoop():
         if numIdle > 0:
             idleTime += time.time() - lastCallTime
             if idleTime > waitTime:
-                delete((numIdle + 1) / 2)
+                delete(int((numIdle + 1) / 2))
                 idleTime = 0
         else:
             idleTime = 0
