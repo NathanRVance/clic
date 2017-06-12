@@ -32,8 +32,8 @@ class Node:
     def __init__(self, name):
         self.name = name
         self.num = parseInt(name[-nodeNumPadding:])
-        state = ""
-        timeEntered = time.time()
+        self.state = ""
+        self.timeEntered = time.time()
     def __str__(self):
         return self.name
     def setState(self, state):
@@ -41,7 +41,7 @@ class Node:
             self.timeEntered = time.time()
             self.state = state
     def timeInState(self):
-        return time.time() - timeEntered
+        return time.time() - self.timeEntered
 
 nodes = [Node(namescheme + str(num).zfill(nodeNumPadding)) for num in range(args.max)]
 
