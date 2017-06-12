@@ -83,6 +83,7 @@ def delete(numToDelete):
     idleNodes = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep "idle" | awk \'{print $2}\'').read().split() if validName.search(nodeName)]
     for node in idleNodes[-int(numToDelete):]:
         node.setState('D')
+        log('Deleting {}'.format(node.name))
         subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
         subprocess.Popen('echo Y | gcloud compute instances delete {}'.format(node.name), shell=True)
 
@@ -90,19 +91,17 @@ def mainLoop():
     idleTime = 0
     lastCallTime = time.time()
     while True:
-        subprocess.Popen('clic-sync-hosts')
         # Start with some book keeping
         slurmRunning = {getNode(nodeName) for nodeName in os.popen('sinfo -h -N -r -o %N').read().split() if validName.search(nodeName)}
         cloudRunning = {getNode(nodeName) for nodeName in os.popen('clic-nodesup -r').read().split() if validName.search(nodeName)}
         cloudAll = {getNode(nodeName) for nodeName in os.popen('clic-nodesup').read().split() if validName.search(nodeName)}
+        subprocess.Popen('clic-sync-hosts').wait()
         # Nodes that were creating and now are running:
         for node in cloudRunning:
             if node.state == 'C':
                 node.setState('R')
-                pid = subprocess.Popen('clic-remote-mount {0}@{1}'.format(user, node.name), shell=True)
-                pid.wait()
-                pid = subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
-                pid.wait()
+                subprocess.Popen('clic-remote-mount {0}@{1}'.format(user, node.name), shell=True).wait()
+                subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume']).wait()
                 log('Node {} came up'.format(node.name))
         # Nodes that were deleting and now are gone:
         nodesWentDown = False
@@ -174,5 +173,4 @@ if os.popen('hostname -s').read() == namescheme or not args.cloud:
 else:
     # This is a compute node
     log('Starting slurmd.service')
-    pid = subprocess.Popen(['systemctl', 'restart', 'slurmd.service'])
-    pid.wait()
+    subprocess.Popen(['systemctl', 'restart', 'slurmd.service']).wait()
