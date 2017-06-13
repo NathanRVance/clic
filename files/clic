@@ -176,6 +176,7 @@ def mainLoop():
 
 if os.popen('hostname -s').read() == namescheme or not args.cloud:
     # This is the head node
+    log('Starting clic as a head node')
     log('Starting slurmctld.service')
     subprocess.Popen(['systemctl', 'restart', 'slurmctld.service'])
     if args.cloud:
@@ -185,5 +186,6 @@ if os.popen('hostname -s').read() == namescheme or not args.cloud:
     mainLoop()
 else:
     # This is a compute node
+    log('Starting clic as a compute node')
     log('Starting slurmd.service')
     subprocess.Popen(['systemctl', 'restart', 'slurmd.service']).wait()
