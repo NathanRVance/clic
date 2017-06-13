@@ -6,15 +6,11 @@ app = Flask(__name__)
 c = rpyc.connect('localhost', 18861)
 
 def formatNode(node):
-    return 'Name: {0}, State: "{1}"'.format(node.name, node.state)
+    return 'Name: <b>{0}</b>, State: "{1}"<br>'.format(node.name, node.state)
 
 @app.route('/')
 def main():
-    return 'Hello World! Cool stuff: {0} nodes\n'.format(len(c.root.getNodes())) + '\n'.join([formatNode(node) for node in c.root.getNodes()])
-
-@app.route('/blah')
-def meh():
-    return 'whatever'
+    return 'CLIC: CLuster In the Cloud<br>'.format(len(c.root.getNodes())) + ''.join([formatNode(node) for node in c.root.getNodes()])
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
