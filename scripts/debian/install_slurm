@@ -4,7 +4,7 @@
 echo "Installing build dependencies"
 sudo apt -y install libalgorithm-c3-perl libarchive-extract-perl libcgi-fast-perl libcgi-pm-perl libclass-c3-perl libclass-c3-xs-perl libcpan-meta-perl libdata-optlist-perl libdata-section-perl libfcgi-perl libhwloc-plugins libhwloc5 liblog-message-perl liblog-message-simple-perl libltdl7 liblua5.1-0 libmodule-build-perl libmodule-pluggable-perl libmodule-signature-perl libmro-compat-perl libmysqlclient18 libnuma1 libpackage-constants-perl libparams-util-perl libpciaccess0 libpod-latex-perl libpod-readme-perl libregexp-common-perl libsoftware-license-perl libsub-exporter-perl libsub-install-perl libterm-ui-perl libtext-soundex-perl libtext-template-perl libxml2 mysql-common ocl-icd-libopencl1 openssl-blacklist perl perl-modules rename sgml-base xml-core gcc make bzip2 libssl-dev
 #sudo apt -y install munge libmunge2 libmunge-dev &> /dev/null
-sudo apt -y install nfs-kernel-server sshfs
+sudo apt -y install nfs-kernel-server sshfs python3-pip
 
 $CLIC_ROOT/scripts/common/install_slurm
 
