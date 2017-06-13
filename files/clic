@@ -4,6 +4,8 @@ import subprocess
 import os
 import re
 import time
+import rpyc
+from threading import Thread
 
 parser = argparse.ArgumentParser(description='This is the CLIC daemon, which monitors the SLURM queue and creates and deletes compute nodes as necessary.')
 parser.add_argument('-c', '--cloud', action='store_true', help='this is running on a cloud computer')
@@ -173,6 +175,19 @@ def mainLoop():
             
         lastCallTime = time.time()
 
+class exportNodes(rpyc.Service):
+    def on_connect(self):
+        pass
+    def on_disconnect(self):
+        pass
+    def exposed_getNodes(self):
+        return nodes
+def startServer():
+    if __name__ == "__main__":
+        from rpyc.utils.server import ThreadedServer
+        t = ThreadedServer(exportNodes, hostname='localhost', port=18861)
+        t.start()
+Thread(target = startServer).start()
 
 if os.popen('hostname -s').read() == namescheme or not args.cloud:
     # This is the head node

@@ -1,0 +1,17 @@
+#!/usr/bin/python3
+import rpyc
+from flask import Flask
+app = Flask(__name__)
+
+c = rpyc.connect("localhost", 18861)
+
+@app.route("/")
+def main():
+    return "Hello World! Cool stuff: {0} nodes, and first is named {1}".format(len(c.root.getNodes()), c.root.getNodes()[0].name)
+
+@app.route("/blah")
+def meh():
+    return "whatever"
+
+if __name__ == "__main__":
+    app.run()
