@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import argparse
-from requests import get
+import ipgetter
 import os
 import re
 from pathlib import Path
@@ -14,7 +14,7 @@ args = parser.parse_args()
 if not re.search('^\w+@\w+$', args.userhost[0]):
     parser.error('incorrect formatting: ' + args.userhost[0])
 
-ip = get('https://api.ipify.org').text
+ip = ipgetter.myip()
 [user, host] = args.userhost[0].split('@')
 hostname = os.popen('hostname -s').read().strip()
 sshOpts = '-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=error'

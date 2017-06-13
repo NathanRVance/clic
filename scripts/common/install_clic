@@ -5,6 +5,7 @@ echo "Using $namescheme as the base name for the cluster"
 #Install some python stuff that clic uses
 sudo pip3 install rpyc
 sudo pip3 install Flask
+sudo pip3 install ipgetter
 
 #Create a daemon that runs clic
 echo -e "\n/usr/bin/clic:"

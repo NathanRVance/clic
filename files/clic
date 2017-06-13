@@ -189,7 +189,7 @@ def startServer():
         t.start()
 Thread(target = startServer).start()
 
-if os.popen('hostname -s').read() == namescheme or not args.cloud:
+if os.popen('hostname -s').read().strip() == namescheme or not args.cloud:
     # This is the head node
     log('Starting clic as a head node')
     log('Starting slurmctld.service')

@@ -6,7 +6,9 @@ app = Flask(__name__)
 c = rpyc.connect('localhost', 18861)
 
 def formatNode(node):
-    return 'Name: <b>{0}</b>, State: "{1}"<br>'.format(node.name, node.state)
+    if node.state != '':
+        return 'Name: <b>{0}</b>, State: "{1}"<br>'.format(node.name, node.state)
+    return ''
 
 @app.route('/')
 def main():
