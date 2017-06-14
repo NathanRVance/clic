@@ -1,0 +1,33 @@
+#!/usr/bin/python3
+import argparse
+import ipgetter
+import os
+import re
+from pathlib import Path
+from pwd import getpwnam
+
+parser = argparse.ArgumentParser(description='Remote mount home directory (NOTE: preserves remote /home/*/.ssh)')
+parser.add_argument('userhost', metavar='USER@HOST', nargs=1, help='USER has passwordless sudo on HOST, on which we will mount /home')
+args = parser.parse_args()
+
+#Error checking
+if not re.search('^\w+@\w+$', args.userhost[0]):
+    parser.error('incorrect formatting: ' + args.userhost[0])
+
+ip = ipgetter.myip()
+[user, host] = args.userhost[0].split('@')
+hostname = os.popen('hostname -s').read().strip()
+sshOpts = '-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=error'
+
+#os.system('sudo clic-copy-id --append --generate')
+os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo clic-sync-hosts {3} {4}"'.format(user, host, sshOpts, hostname, ip))
+os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo rm /root/sshfs_uids /root/sshfs_gids"'.format(user, host, sshOpts))
+
+for path in Path('/home').iterdir():
+    if path.is_dir():
+        localUser = path.parts[-1]
+        uid = getpwnam(localUser).pw_uid
+        gid = getpwnam(localUser)[2]
+        os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "echo {3}:{4} | sudo tee -a /root/sshfs_uids &> /dev/null; echo {3}:{5} | sudo tee -a /root/sshfs_gids &> /dev/null"'.format(user, host, sshOpts, localUser, uid, gid))
+
+os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo mkdir /bind-root; sudo sshfs {2} -o nonempty -o transform_symlinks -o hard_remove -o allow_other -o idmap=file -o nomap=ignore -o uidfile=/root/sshfs_uids -o gidfile=/root/sshfs_gids root@{3}:/home /home && sudo mount --bind / /bind-root && ( for user in \`ls /bind-root/home\`; do sudo mount --bind /bind-root/home/\$user/.ssh /home/\$user/.ssh; done ) &"'.format(user, host, sshOpts, hostname))

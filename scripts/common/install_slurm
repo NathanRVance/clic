@@ -90,5 +90,10 @@ sudo chown slurm:slurm /etc/slurm/slurm.key /etc/slurm/slurm.cert
 sudo chmod 400 /etc/slurm/slurm.key
 
 # Set up exports
-#echo -e "\n/etc/exports:"
-#cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
+echo -e "\n/etc/exports:"
+cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
+
+# Modify /etc/idmapd.conf so that it will translate UIDs/GIDs
+echo N | sudo tee /sys/module/nfs/parameters/nfs4_disable_idmapping &> /dev/null
+sudo sed -i 's/#Domain = local.domain.edu/Domain = localdomain/g' /etc/idmapd.conf
+sudo nfsidmap -c

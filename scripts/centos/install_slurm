@@ -15,3 +15,5 @@ $CLIC_ROOT/scripts/common/install_slurm
 # Enable and start nfs (this is platform specific)
 sudo systemctl enable nfs
 sudo systemctl start nfs
+sudo systemctl enable nfs-idmapd
+sudo systemctl start nfs-idmapd
