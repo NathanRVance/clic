@@ -17,13 +17,13 @@ ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.key /etc/slurm/slurm.k
 scp $opts /etc/slurm/slurm.cert $user@$namescheme:.
 ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.cert /etc/slurm/slurm.cert && sudo chown root:root /etc/slurm/slurm.cert && sudo chmod 644 /etc/slurm/slurm.cert"
 
-# Allow root ssh for sshfs mounting
-ssh $opts $user@$namescheme "sudo su - -c \"if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa; fi\""
-ssh $opts $user@$namescheme "sudo su - -c \"cat ~/.ssh/id_rsa.pub\"" | sudo tee -a /root/.ssh/authorized_keys
-
-# Test sshfs
+# Allow ssh for sshfs mounting
 sudo useradd -m -s /bin/bash $user
 sudo clic-copy-id --append --generate
+ssh $opts $user@$namescheme "if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa; fi"
+ssh $opts $user@$namescheme "cat ~/.ssh/id_rsa.pub" | sudo tee -a /home/$user/.ssh/authorized_keys
+
+# Test sshfs
 clic-remote-mount $user@$namescheme
 ssh $opts $namescheme "touch foo"
 if [ ! -e ~/foo ]; then
