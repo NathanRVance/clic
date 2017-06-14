@@ -23,6 +23,6 @@ sshOpts = '-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=
 os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo clic-sync-hosts {3} {4}"'.format(user, host, sshOpts, hostname, ip))
 
 #Set up ssh tunnel
-os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "ssh {2} -fN -L 3049:localhost:2049 {0}@{3}"'.format(user, host, sshOpts, hostname))
+os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "ssh {2} -fN -L 3049:localhost:2049 {0}@{3} &"'.format(user, host, sshOpts, hostname))
 #Set up nfs
-os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo mkdir /bind-root; sudo mount --bind / /bind-root; sudo mount -t nfs4 -o port=3049 localhost:/home /home && ( for user in \`ls /bind-root/home\`; do sudo mount --bind /bind-root/home/\$user/.ssh /home/\$user/.ssh; done ) &"'.format(user, host, sshOpts))
+os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo mkdir /bind-root; sudo mount -t nfs4 -o port=3049 localhost:/home /home && sudo mount --bind / /bind-root && ( for user in \`ls /bind-root/home\`; do sudo mount --bind /bind-root/home/\$user/.ssh /home/\$user/.ssh; done ) &"'.format(user, host, sshOpts))
