@@ -24,7 +24,7 @@ ssh $opts $user@$namescheme "if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t r
 ssh $opts $user@$namescheme "cat ~/.ssh/id_rsa.pub" | sudo tee -a /home/$user/.ssh/authorized_keys
 
 # Test node remote mounting
-clic-init-node $user@$namescheme
+sudo clic-init-node $user@$namescheme
 ssh $opts $namescheme "touch foo"
 if [ ! -e ~/foo ]; then
 	echo "Failed to create file remotely!"

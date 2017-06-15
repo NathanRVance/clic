@@ -14,7 +14,6 @@ sudo chmod +x /usr/bin/clic
 echo -e "\n/usr/bin/clic-sync-hosts:"
 cat $CLIC_ROOT/files/clic-sync-hosts | sudo tee /usr/bin/clic-sync-hosts
 sudo chmod +x /usr/bin/clic-sync-hosts
-sudo clic-sync-hosts
 
 echo -e "\n/usr/bin/clic-nodesup:"
 cat $CLIC_ROOT/files/clic-nodesup | sed "s/USER/$user/g" | sed "s&KEY&/home/`whoami`/.ssh/id_rsa&g" | sudo tee /usr/bin/clic-nodesup
@@ -31,6 +30,10 @@ sudo chmod +x /usr/bin/clic-mount
 echo -e "\n/usr/bin/clic-copy-id:"
 cat $CLIC_ROOT/files/clic-copy-id | sudo tee /usr/bin/clic-copy-id
 sudo chmod +x /usr/bin/clic-copy-id
+
+#Run some of them
+source ~/.bashrc
+sudo clic-sync-hosts
 sudo clic-copy-id --append -u `whoami` $user `whoami`
 
 #Create a service to start the clic daemon
