@@ -90,6 +90,7 @@ if ! $skip_slurm; then
 	$CLIC_ROOT/scripts/$OS/install_slurm
 fi	
 $CLIC_ROOT/scripts/common/install_clic
+source ~/.bashrc
 if [ "$cloud" == false ]; then
 	$CLIC_ROOT/scripts/common/create_cloud_snapshot
 	echo "Please ensure that tcp ports 6817 (slurm) and 22 (ssh) are allowed through the firewall to this machine."
