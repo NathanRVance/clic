@@ -104,7 +104,7 @@ def mainLoop():
         for node in cloudRunning:
             if node.state == 'C':
                 node.setState('R')
-                pids.append(subprocess.Popen('clic-remote-mount {0}@{1}; sleep 5; scontrol update nodename={1} state=resume'.format(user, node.name), shell=True))
+                pids.append(subprocess.Popen('clic-init-node {0}@{1}; sleep 5; scontrol update nodename={1} state=resume'.format(user, node.name), shell=True))
                 log('Node {} came up'.format(node.name))
         for pid in pids:
             pid.wait();

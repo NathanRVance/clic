@@ -22,9 +22,13 @@ echo -e "\n/usr/bin/clic-nodesup:"
 cat $CLIC_ROOT/files/clic-nodesup | sed "s/USER/$user/g" | sed "s&KEY&/home/`whoami`/.ssh/id_rsa&g" | sudo tee /usr/bin/clic-nodesup
 sudo chmod +x /usr/bin/clic-nodesup
 
-echo -e "\n/usr/bin/clic-remote-mount:"
-cat $CLIC_ROOT/files/clic-remote-mount | sudo tee /usr/bin/clic-remote-mount
-sudo chmod +x /usr/bin/clic-remote-mount
+echo -e "\n/usr/bin/clic-init-node:"
+cat $CLIC_ROOT/files/clic-init-node | sudo tee /usr/bin/clic-init-node
+sudo chmod +x /usr/bin/clic-init-node
+
+echo -e "\n/usr/bin/clic-mount:"
+cat $CLIC_ROOT/files/clic-mount | sudo tee /usr/bin/clic-mount
+sudo chmod +x /usr/bin/clic-mount
 
 echo -e "\n/usr/bin/clic-copy-id:"
 cat $CLIC_ROOT/files/clic-copy-id | sudo tee /usr/bin/clic-copy-id
