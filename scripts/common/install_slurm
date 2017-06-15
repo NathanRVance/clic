@@ -94,7 +94,9 @@ echo -e "\n/etc/exports:"
 cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
 
 # Modify /etc/idmapd.conf so that it will translate UIDs/GIDs
+echo "options nfs nfs4_disable_idmapping=0" | sudo tee /etc/modprobe.d/nfs.conf &> /dev/null
 echo N | sudo tee /sys/module/nfs/parameters/nfs4_disable_idmapping &> /dev/null
+echo "options nfsd nfs4_disable_idmapping=0" | sudo tee /etc/modprobe.d/nfsd.conf &> /dev/null
 echo N | sudo tee /sys/module/nfsd/parameters/nfs4_disable_idmapping &> /dev/null
 sudo sed -i 's/\# *Domain = .*/Domain = localdomain/g' /etc/idmapd.conf
 sudo nfsidmap -c
