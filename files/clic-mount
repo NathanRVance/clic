@@ -19,7 +19,7 @@ sshOpts = '-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=
 os.popen('sudo ssh -i /home/{0}/.ssh/id_rsa {2} -fN -L 3049:localhost:2049 {0}@{1}'.format(user, host, sshOpts))
 time.sleep(2)
 # Set up nfs
-os.system('sudo mount -t nfs4 -o port=3049 localhost:/home /home')
+os.system('sudo mount -t nfs4 -o port=3049,rw localhost:/home /home')
 # Fix /home/*/.ssh
 # Create a directory to mount / to
 os.system('if [ ! -d "/bind-root" ]; then sudo mkdir /bind-root; fi')

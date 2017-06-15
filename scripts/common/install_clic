@@ -34,7 +34,7 @@ sudo chmod +x /usr/bin/clic-copy-id
 #Run some of them
 source ~/.bashrc
 sudo clic-sync-hosts
-sudo clic-copy-id --append -u `whoami` $user `whoami`
+sudo clic-copy-id --generate --append -u `whoami` $user `whoami`
 
 #Create a service to start the clic daemon
 echo -e "\n/etc/systemd/system/clic.service:"
