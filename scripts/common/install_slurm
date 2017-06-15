@@ -91,7 +91,9 @@ sudo chmod 400 /etc/slurm/slurm.key
 
 # Set up exports
 echo -e "\n/etc/exports:"
-cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
+if ! cat /etc/exports | grep -q "`cat $CLIC_ROOT/files/exports`"; then
+	cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
+fi
 
 # Modify /etc/idmapd.conf so that it will translate UIDs/GIDs
 echo "options nfs nfs4_disable_idmapping=0" | sudo tee /etc/modprobe.d/nfs.conf &> /dev/null
