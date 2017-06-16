@@ -25,7 +25,7 @@ for path in Path('/home').iterdir():
         localUser = path.parts[-1]
         uid = getpwnam(localUser).pw_uid
         gid = getpwnam(localUser)[2]
-        os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo usermod -o -u {4} {3} && sudo groupmod -o -g {5} {3} &"'.format(user, host, sshOpts, localUser, uid, gid))
+        os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "nohup sudo su - -c \'usermod -o -u {4} {3} && groupmod -o -g {5} {3}\' &> /dev/null &"'.format(user, host, sshOpts, localUser, uid, gid))
 
 #os.system('sudo clic-copy-id --append --generate')
 os.system('sudo ssh -i /home/{0}/.ssh/id_rsa {2} {0}@{1} "sudo clic-sync-hosts {3} {4}"'.format(user, host, sshOpts, hostname, ip))
