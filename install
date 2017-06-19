@@ -62,11 +62,11 @@ done
 if [ "$script" == false ]; then
 	echo -n "Installing clic using "
 	if [ "$cloud" == false ]; then
-		echo -n "the google cloud instance named $namescheme as the basis for all compute nodes, and the user account $user on $namescheme for ssh communication. The instance $namescheme must be currently running and "
+		echo -n "the google cloud instance named $namescheme as the basis for all compute nodes, and the user account $user on $namescheme for ssh communication. The instance $namescheme must be currently running, already have any desired computational software installed to it, and the "
 	else
-		echo -n "this cloud instance ($namescheme) as the basis for both the head and compute nodes, and the user account $user on this instance for ssh communication. This instance must "
+		echo -n "this cloud instance ($namescheme) as the basis for both the head and compute nodes, and the user account $user on this instance for ssh communication. The "
 	fi
-	echo "already have any desired computational software installed to it, and cloud account $user must have passwordless sudo permission."
+	echo "cloud account $user must have passwordless sudo permission."
 	echo "Press ENTER to continue, or CTRL-c to exit."
 	read ans
 fi

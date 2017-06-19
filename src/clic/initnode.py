@@ -1,22 +1,22 @@
 #!/usr/bin/python3
-import ipgetter
 import os
 from pathlib import Path
 from pwd import getpwnam
 from clic import pssh
 
-def init(user, host):
+def init(user, host, skipsync):
     # Sync UIDs and GIDs
     for path in Path('/home').iterdir():
         if path.is_dir():
             localUser = path.parts[-1]
             uid = getpwnam(localUser).pw_uid
             gid = getpwnam(localUser)[2]
-            pssh.run(user, user, host, 'nohup sudo su - -c \'usermod -o -u {1} {0} && groupmod -o -g {2} {0}\' &> /dev/null &'.format(localUser, uid, gid))
+            pssh.run(user, user, host, 'nohup sudo su - -c \'usermod -o -u {1} {0}; groupmod -o -g {2} {0}\' &> /dev/null &'.format(localUser, uid, gid))
     
-    ip = ipgetter.myip()
     hostname = os.popen('hostname -s').read().strip()
-    pssh.run(user, user, host, 'sudo clic-synchosts {0}:{1}'.format(hostname, ip))
+    if not skipsync:
+        import ipgetter
+        pssh.run(user, user, host, 'sudo clic-synchosts {0}:{1}'.format(hostname, ipgetter.myip()))
     pssh.run(user, user, host, 'sudo clic-mount {0}@{1} &'.format(user, hostname))
 
 def main():

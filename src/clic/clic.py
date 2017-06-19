@@ -101,13 +101,14 @@ def mainLoop():
         slurmRunning = {getNode(nodeName) for nodeName in os.popen('sinfo -h -N -r -o %N').read().split() if validName.search(nodeName)}
         cloudRunning = {getNode(nodeName) for nodeName in nodesup.responds(user) if validName.search(nodeName)}
         cloudAll = {getNode(nodeName) for nodeName in nodesup.all(False) if validName.search(nodeName)}
-        synchosts.addAll()
+        if not args.cloud:
+            synchosts.addAll()
         # Nodes that were creating and now are running:
         names = []
         for node in cloudRunning:
             if node.state == 'C':
                 node.setState('R')
-                initnode.init(user, node.name)
+                initnode.init(user, node.name, args.cloud)
                 names.append(node.name)
                 log('Node {} came up'.format(node.name))
         time.sleep(5)
