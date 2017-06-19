@@ -1,3 +1,3 @@
 #!/usr/bin/env python3
 
-__all__ = ["clic", "clic-init_node"]
+__all__ = ['clic', 'copyid', 'initnode', 'mount', 'nodesup', 'pssh', 'synchosts', 'web']

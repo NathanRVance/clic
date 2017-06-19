@@ -41,7 +41,7 @@ if __name__ == "__main__":
     import argparse
     import re
     parser = argparse.ArgumentParser(description='Remotely execute commands using ssh')
-    parser.add_argument('--key', metavar='KEY_OWNER', nargs=1, help='use the key in KEY_OWNER\'s .ssh directory when connecting to USER@HOST. Otherwise, pssh uses the key of the user that executes pssh.')
+    parser.add_argument('--key', metavar='KEY_OWNER', nargs=1, help='use the key in KEY_OWNER\'s ~/.ssh directory when connecting to USER@HOST. Otherwise, pssh uses the key of the user that executes pssh.')
     parser.add_argument('--canconnect', action='store_true', help='tests if USER can passwordlessly ssh to HOST. Prints "True" on a successful connection, or "False" otherwise.')
     parser.add_argument('userhost', metavar='USER@HOST', nargs=1, help='connect to USER at HOST')
     parser.add_argument('command', metavar='CMD', nargs='?', help='execute commands as USER on HOST')
