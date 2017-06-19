@@ -27,7 +27,7 @@ def addAll():
         ip = parts[-2]
         add(host, ip)
 
-if __name__ == "__main__":
+def main():
     import argparse
     parser = argparse.ArgumentParser(description='Modify /etc/hosts. Default action is add ip addresses for compute nodes')
     parser.add_argument('hostip', metavar='HOST:IP', nargs='?', help='add HOST:ID mapping to /etc/hosts')

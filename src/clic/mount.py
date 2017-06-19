@@ -15,7 +15,7 @@ def mount(user, host):
     os.system('sudo mount --bind / /bind-root')
     os.system('for user in `ls /home`; do sudo mount --bind /bind-root/home/$user/.ssh /home/$user/.ssh; done')
 
-if __name__ == "__main__":
+def main():
     import argparse
     import re
     parser = argparse.ArgumentParser(description='Mount remote home directory (NOTE: preserves /home/*/.ssh)')

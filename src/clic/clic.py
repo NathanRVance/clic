@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import argparse
 import subprocess
 import os
@@ -6,6 +6,9 @@ import re
 import time
 import rpyc
 from threading import Thread
+from clic import initnode
+from clic import nodesup
+from clic import synchosts
 
 parser = argparse.ArgumentParser(description='This is the CLIC daemon, which monitors the SLURM queue and creates and deletes compute nodes as necessary.')
 parser.add_argument('-c', '--cloud', action='store_true', help='this is running on a cloud computer')
@@ -96,18 +99,20 @@ def mainLoop():
     while True:
         # Start with some book keeping
         slurmRunning = {getNode(nodeName) for nodeName in os.popen('sinfo -h -N -r -o %N').read().split() if validName.search(nodeName)}
-        cloudRunning = {getNode(nodeName) for nodeName in os.popen('clic-nodesup -r').read().split() if validName.search(nodeName)}
-        cloudAll = {getNode(nodeName) for nodeName in os.popen('clic-nodesup').read().split() if validName.search(nodeName)}
-        subprocess.Popen('clic-sync-hosts').wait()
+        cloudRunning = {getNode(nodeName) for nodeName in nodesup.responds(user) if validName.search(nodeName)}
+        cloudAll = {getNode(nodeName) for nodeName in nodesup.all() if validName.search(nodeName)}
+        synchosts.addAll()
         # Nodes that were creating and now are running:
-        pids = []
+        names = []
         for node in cloudRunning:
             if node.state == 'C':
                 node.setState('R')
-                pids.append(subprocess.Popen('clic-init-node {0}@{1}; sleep 5; scontrol update nodename={1} state=resume'.format(user, node.name), shell=True))
+                initnode.init(user, node.name)
+                names.append(node.name)
                 log('Node {} came up'.format(node.name))
-        for pid in pids:
-            pid.wait();
+        time.sleep(5)
+        for name in names:
+            subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
         # Nodes that were deleting and now are gone:
         nodesWentDown = False
         for node in getNodesInState('D') - cloudAll:
@@ -187,20 +192,22 @@ def startServer():
         from rpyc.utils.server import ThreadedServer
         t = ThreadedServer(exportNodes, hostname='localhost', port=18861, protocol_config={'allow_public_attrs':True})
         t.start()
-Thread(target = startServer).start()
 
-if os.popen('hostname -s').read().strip() == namescheme or not args.cloud:
-    # This is the head node
-    log('Starting clic as a head node')
-    log('Starting slurmctld.service')
-    subprocess.Popen(['systemctl', 'restart', 'slurmctld.service'])
-    if args.cloud:
-        zone = os.popen('gcloud compute instances list | grep "$(hostname) " | awk \'{print $2}\'').read()
-        log('Configuring gcloud for zone {}'.format(zone))
-        subprocess.Popen(['gcloud', 'config', 'set', 'compute/zone', zone])
-    mainLoop()
-else:
-    # This is a compute node
-    log('Starting clic as a compute node')
-    log('Starting slurmd.service')
-    subprocess.Popen(['systemctl', 'restart', 'slurmd.service']).wait()
+def main():
+    Thread(target = startServer).start()
+
+    if os.popen('hostname -s').read().strip() == namescheme or not args.cloud:
+        # This is the head node
+        log('Starting clic as a head node')
+        log('Starting slurmctld.service')
+        subprocess.Popen(['systemctl', 'restart', 'slurmctld.service'])
+        if args.cloud:
+            zone = os.popen('gcloud compute instances list | grep "$(hostname) " | awk \'{print $2}\'').read()
+            log('Configuring gcloud for zone {}'.format(zone))
+            subprocess.Popen(['gcloud', 'config', 'set', 'compute/zone', zone])
+        mainLoop()
+    else:
+        # This is a compute node
+        log('Starting clic as a compute node')
+        log('Starting slurmd.service')
+        subprocess.Popen(['systemctl', 'restart', 'slurmd.service']).wait()

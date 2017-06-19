@@ -37,7 +37,7 @@ def run(keyowner, user, host, command):
     return [''.join([byte.decode('utf-8') for byte in ssh.stdout.readlines()]),
             ''.join([byte.decode('utf-8') for byte in ssh.stderr.readlines()])]
 
-if __name__ == "__main__":
+def main():
     import argparse
     import re
     parser = argparse.ArgumentParser(description='Remotely execute commands using ssh')

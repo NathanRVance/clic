@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import subprocess
 import re
+from clic import pssh
 
 def responds(user):
-    import pssh
     return [node for node in all(True) if pssh.canConnect(user, user, node)]
 
 def all(running):
@@ -15,7 +15,7 @@ def all(running):
     else:
         return re.findall('^\S*', result, re.MULTILINE)
 
-if __name__ == "__main__":
+def main():
     import argparse
     parser = argparse.ArgumentParser(description='Obtain a list of nodes that are running')
     parser.add_argument('-r', '--responds', metavar='USER', nargs=1, help='include only nodes that respond to ssh connections')

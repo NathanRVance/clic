@@ -47,7 +47,7 @@ def send():
     keys = keys.rstrip() # Trim trailing newline
     os.system('gcloud compute project-info add-metadata --metadata=^DELIM^sshKeys="' + re.sub('"', '\\"', keys) + '"')
 
-if __name__ == "__main__":
+def main():
     import argparse
     parser = argparse.ArgumentParser(description='Copy public keys to cloud computers')
     parser.add_argument('-g', '--generate', action='store_true', help='generate a public key for users without one')
