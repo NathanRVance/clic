@@ -12,7 +12,7 @@ def init(user, host):
             localUser = path.parts[-1]
             uid = getpwnam(localUser).pw_uid
             gid = getpwnam(localUser)[2]
-            pssh.run(user, user, host, 'nohup sudo su - -c \'usermod -o -u {1} {0} && groupmod -o -g {2} {0}\' &> /dev/null &'.format(localuser, uid, gid))
+            pssh.run(user, user, host, 'nohup sudo su - -c \'usermod -o -u {1} {0} && groupmod -o -g {2} {0}\' &> /dev/null &'.format(localUser, uid, gid))
     
     ip = ipgetter.myip()
     hostname = os.popen('hostname -s').read().strip()
