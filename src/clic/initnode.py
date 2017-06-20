@@ -29,4 +29,4 @@ def main():
     if not re.search('^\w+@\w+$', args.userhost[0]):
         parser.error('incorrect formatting: ' + args.userhost[0])
     [user, host] = args.userhost[0].split('@')
-    init(user, host)
+    init(user, host, False)
