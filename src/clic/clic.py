@@ -114,6 +114,9 @@ def mainLoop():
         time.sleep(5)
         for name in names:
             subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
+            # There's a chance they came up with different IPs. Restart slurmctld to avoid errors.
+            subprocess.Popen(['systemctl', 'restart', 'slurmctld'])
+            log('WARNING: Restarting slurmctld')
         # Nodes that were deleting and now are gone:
         nodesWentDown = False
         for node in getNodesInState('D') - cloudAll:
