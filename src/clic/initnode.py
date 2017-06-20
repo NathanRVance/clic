@@ -10,7 +10,7 @@ def init(user, host, skipsync):
         if path.is_dir():
             localUser = path.parts[-1]
             uid = getpwnam(localUser).pw_uid
-            gid = getpwnam(localUser)[2]
+            gid = getpwnam(localUser).pw_gid
             pssh.run(user, user, host, 'nohup sudo su - -c \'usermod -o -u {1} {0}; groupmod -o -g {2} {0}\' &> /dev/null &'.format(localUser, uid, gid))
     
     hostname = os.popen('hostname -s').read().strip()
