@@ -87,7 +87,7 @@ while :; do
         nodesUp=`gcloud compute instances list | tail -n+3 | wc -l`
         curTime=$(expr $(uptime) - $startTime)
         echo "$curTime $qCount $rCount $nodesUp" >> out
-        if [ $qCount -eq 0 ] && [ $rCount -eq 0 ] && [ $nodesUp -eq 0 ]; then
+        if [ $qCount -eq 0 ] && [ $rCount -eq 0 ] && [ $nodesUp -eq 0 ] && [ $CONTINUOUS -eq 0 ]; then
                 break
         fi
 done

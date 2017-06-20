@@ -111,9 +111,10 @@ def mainLoop():
                 initnode.init(user, node.name, args.cloud)
                 names.append(node.name)
                 log('Node {} came up'.format(node.name))
-        time.sleep(5)
-        for name in names:
-            subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
+        if len(names) > 0:
+            time.sleep(5)
+            for name in names:
+                subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
             # There's a chance they came up with different IPs. Restart slurmctld to avoid errors.
             subprocess.Popen(['systemctl', 'restart', 'slurmctld'])
             log('WARNING: Restarting slurmctld')
@@ -130,10 +131,10 @@ def mainLoop():
             log('WARNING: Restarting slurmctld')
         
         # Error conditions:
-        # We think they're running, but the cloud doesn't:
-        for node in getNodesInState('R') - cloudRunning:
-            node.setState('')
-            subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Error"'])
+        # We think they're up, but the cloud doesn't:
+        for node in getNodesInState('R') - cloudAll:
+            #node.setState('')
+            #subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Error"'])
             log('ERROR: Node {} deleted outside of clic!'.format(node.name))
         # We think they're running, but slurm doesn't
         for node in getNodesInState('R') - slurmRunning:
