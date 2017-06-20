@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
         name='clic',
-        version='0.0.0',
+        version='0.0.1',
         description='CLuster In the Cloud',
         long_description='Dynamically resizing high throughput cloud computing',
         url='https://github.com/nathanrvance/clic',
@@ -23,6 +23,7 @@ setup(
                 'clic-nodesup = clic.nodesup:main',
                 'clic-ssh = clic.pssh:main',
                 'clic-synchosts = clic.synchosts:main',
+                'clic-web = clic.web:launch',
                 ]
             }
         )

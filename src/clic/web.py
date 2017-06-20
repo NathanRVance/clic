@@ -14,5 +14,6 @@ def formatNode(node):
 def main():
     return 'CLIC: CLuster In the Cloud<br>'.format(len(c.root.getNodes())) + ''.join([formatNode(node) for node in c.root.getNodes()])
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+def launch():
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0')

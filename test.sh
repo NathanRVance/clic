@@ -74,7 +74,8 @@ while true; do
 done
 
 startTime=`uptime`
-echo "time jobsQueued jobsRunning nodesUp" > out
+echo "# Submits $NUMBER $DURATION second jobs every 10 seconds for $CONTINUOUS iterations" > out
+echo "time jobsQueued jobsRunning nodesUp" >> out
 while :; do
 	if [ "$CONTINUOUS" -gt 0 ]; then
 		execute `rand $NUMBER` `rand $DURATION`
