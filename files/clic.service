@@ -3,7 +3,7 @@ Description=CLIC: CLuster In the Cloud
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/clic CLOUD USER NAMESCHEME
+ExecStart=PATH CLOUD USER NAMESCHEME
 
 [Install]
 WantedBy=multi-user.target
