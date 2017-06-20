@@ -97,12 +97,12 @@ def mainLoop():
     idleTime = 0
     lastCallTime = time.time()
     while True:
+        if not args.cloud:
+            synchosts.addAll()
         # Start with some book keeping
         slurmRunning = {getNode(nodeName) for nodeName in os.popen('sinfo -h -N -r -o %N').read().split() if validName.search(nodeName)}
         cloudRunning = {getNode(nodeName) for nodeName in nodesup.responds(user) if validName.search(nodeName)}
         cloudAll = {getNode(nodeName) for nodeName in nodesup.all(False) if validName.search(nodeName)}
-        if not args.cloud:
-            synchosts.addAll()
         # Nodes that were creating and now are running:
         names = []
         for node in cloudRunning:
