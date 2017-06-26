@@ -20,6 +20,7 @@ args = parser.parse_args()
 
 # Constants
 waitTime = 15
+minRunTime = 600 # Let nodes run at least 10 minutes before deleting
 
 user = args.user[0]
 namescheme = args.namescheme[0]
@@ -84,14 +85,16 @@ def create(numToCreate):
         subprocess.Popen('gcloud compute disks create {0} --size 10 --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-standard-1" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {2}'.format(node.name, namescheme, logfile), shell=True)
 
 def delete(numToDelete):
-    if numToDelete <= 0:
-        return
     idleNodes = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep "idle" | awk \'{print $2}\'').read().split() if validName.search(nodeName)]
-    for node in idleNodes[-int(numToDelete):]:
-        node.setState('D')
-        log('Deleting {}'.format(node.name))
-        subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
-        subprocess.Popen('echo Y | gcloud compute instances delete {}'.format(node.name), shell=True)
+    for node in reversed(idleNodes):
+        if numToDelete <= 0:
+            return
+        if node.state == 'R' and node.timeInState() >= minRunTime:
+            node.setState('D')
+            log('Deleting {}'.format(node.name))
+            subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
+            subprocess.Popen('while true; do if [ -n "`sinfo -h -N -o "%N %t" | grep {0} | awk \'{print $2}\' | grep drain`" ]; then echo Y | gcloud compute instances delete {0}; break; fi; sleep 10; done'.format(node.name), shell=True)
+            numToDelete -= 1
 
 def mainLoop():
     idleTime = 0
@@ -103,6 +106,7 @@ def mainLoop():
         slurmRunning = {getNode(nodeName) for nodeName in os.popen('sinfo -h -N -r -o %N').read().split() if validName.search(nodeName)}
         cloudRunning = {getNode(nodeName) for nodeName in nodesup.responds(user) if validName.search(nodeName)}
         cloudAll = {getNode(nodeName) for nodeName in nodesup.all(False) if validName.search(nodeName)}
+        
         # Nodes that were creating and now are running:
         names = []
         for node in cloudRunning:
@@ -116,8 +120,9 @@ def mainLoop():
             for name in names:
                 subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
             # There's a chance they came up with different IPs. Restart slurmctld to avoid errors.
-            subprocess.Popen(['systemctl', 'restart', 'slurmctld'])
             log('WARNING: Restarting slurmctld')
+            subprocess.Popen(['systemctl', 'restart', 'slurmctld'])
+
         # Nodes that were deleting and now are gone:
         nodesWentDown = False
         for node in getNodesInState('D') - cloudAll:
@@ -127,30 +132,33 @@ def mainLoop():
             log('Node {} went down'.format(node.name))
         if nodesWentDown:
             # There's a chance they'll come up later with different IPs. Restart slurmctld to avoid errors.
-            subprocess.Popen(['systemctl', 'restart', 'slurmctld'])
             log('WARNING: Restarting slurmctld')
+            subprocess.Popen(['systemctl', 'restart', 'slurmctld'])
         
-        # Error conditions:
+        # Error conditions (log but don't do anything about it):
         # We think they're up, but the cloud doesn't:
         for node in getNodesInState('R') - cloudAll:
             #node.setState('')
             #subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Error"'])
             log('ERROR: Node {} deleted outside of clic!'.format(node.name))
-        # We think they're running, but slurm doesn't
+        
+        # We think they're running, but slurm doesn't:
         for node in getNodesInState('R') - slurmRunning:
             if node.timeInState() > waitTime * 2:
                 log('ERROR: Node {} is unresponsive!'.format(node.name))
+        
         # Nodes are running but aren't registered:
         for node in getNodesInState('') & cloudRunning:
             log('ERROR: Encountered unregistered node {}!'.format(node.name))
+        
+        # Nodes that are taking way too long to boot:
         for node in getNodesInState('C'):
             if node.timeInState() > 200:
                 log('ERROR: Node {} hung on boot!'.format(node.name))
 
         
-        # Add and delete nodes
+        # Book keeping for jobs
         #rJobs = os.popen('squeue -h -t r,cg,cf -o %A').read().split()
-        numIdle = parseInt(os.popen('sinfo -h -r -o %A | cut -d "/" -f 2').read())
         qJobs = os.popen('squeue -h -t pd -o %A').read().split()
         # Delete dequeued jobs
         for job in jobs:
@@ -161,16 +169,19 @@ def mainLoop():
             if job not in [j.num for j in jobs]:
                 jobs.append(Job(job))
         
-        jobsWaitingTooLong = sum(1 for job in jobs if job.timeWaiting() > waitTime)
-        numCreating = len(getNodesInState('C'))
+        # Add and delete nodes
+        numIdle = parseInt(os.popen('sinfo -h -r -o %A | cut -d "/" -f 2').read())
+        creating = getNodesInState('C')
         running = getNodesInState('R')
-        for node in running:
-            if node.timeInState() < waitTime:
-                numIdle += 1
-        nodesToCreate = int((jobsWaitingTooLong - numCreating + 1) / 2 - numIdle)
-        if numCreating + len(running) + numIdle == 0 and len(jobs) > 0:
-            nodesToCreate = int((len(jobs) + 1) / 2)
-        create(nodesToCreate)
+        if len(creating) + len(running) == 0 and len(jobs) > 0:
+            create(int((len(jobs) + 1) / 2))
+        else:
+            # SLURM may not have had the chance to utilize some "running" nodes
+            for node in running:
+                if node.timeInState() < waitTime:
+                    numIdle += 1
+            jobsWaitingTooLong = sum(1 for job in jobs if job.timeWaiting() > waitTime)
+            create(int((jobsWaitingTooLong - len(creating) + 1) / 2 - numIdle))
        
         if numIdle > 0 and len(jobs) == 0:
             if idleTime == 0:
