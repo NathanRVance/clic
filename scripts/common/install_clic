@@ -3,7 +3,7 @@
 echo "Using $namescheme as the base name for the cluster"
 
 #Install clic modules
-sudo su - -c "pip3 install $CLIC_ROOT/src"
+sudo su - -c "pip3 install $CLIC_ROOT/src --upgrade"
 
 #Run some of them
 source ~/.bashrc

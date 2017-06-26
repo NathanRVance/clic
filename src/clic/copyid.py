@@ -18,8 +18,6 @@ def refresh(append):
             current = re.sub('\s*value:\s*', '', current)
             current = re.sub('\n\s*', '\n', current)
             current = re.sub('\n(?=\S*@\S*)', ' ', current)
-            current = re.sub('\^DELIM\^', '', current)
-            current = re.sub(',', 'DELIM', current)
             keys = current + '\n'
 
 def copy(generate, localuser, remoteuser):
@@ -45,8 +43,7 @@ def copyAll(generate):
 def send():
     global keys
     keys = keys.rstrip() # Trim trailing newline
-    os.system('gcloud compute project-info add-metadata --metadata=^DELIM^sshKeys=\'{0}\''.format(keys))
-    print('gcloud compute project-info add-metadata --metadata=^DELIM^sshKeys=\'{0}\''.format(keys))
+    os.system('gcloud compute project-info add-metadata --metadata=^DOES_NOT_OCCURE^sshKeys=\'{0}\''.format(keys))
 
 def main():
     import argparse
