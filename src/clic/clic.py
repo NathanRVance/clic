@@ -93,7 +93,7 @@ def delete(numToDelete):
             node.setState('D')
             log('Deleting {}'.format(node.name))
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
-            subprocess.Popen('while true; do if [ -n "`sinfo -h -N -o "%N %t" | grep {0} | awk \'{print $2}\' | grep drain`" ]; then echo Y | gcloud compute instances delete {0}; break; fi; sleep 10; done'.format(node.name), shell=True)
+            subprocess.Popen('while true; do if [ -n "`sinfo -h -N -o "%N %t" | grep {0} | awk \'{{print $2}}\' | grep drain`" ]; then echo Y | gcloud compute instances delete {0}; break; fi; sleep 10; done'.format(node.name), shell=True)
             numToDelete -= 1
 
 def mainLoop():
