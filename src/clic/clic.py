@@ -27,7 +27,7 @@ namescheme = args.namescheme[0]
 logfile = args.logfile
 maxNodeNum = args.max - 1
 nodeNumPadding = len(str(maxNodeNum))
-validName = re.compile('^' + namescheme + '\d{' + str(nodeNumPadding) + '}$')
+validName = re.compile('^' + namescheme + '-\d+-\d{' + str(nodeNumPadding) + '}$')
 
 def parseInt(value):
     try:
@@ -39,7 +39,9 @@ class Node:
     def __init__(self, name):
         self.name = name
         self.num = parseInt(name[-nodeNumPadding:])
-        self.state = ""
+        self.cpus = parseInt(re.search('(?<=-)\d*(?=-)', name).group(0))
+        self.partition = 'clic-' + str(self.cpus)
+        self.state = ''
         self.timeEntered = time.time()
     def __str__(self):
         return self.name
@@ -50,7 +52,7 @@ class Node:
     def timeInState(self):
         return time.time() - self.timeEntered
 
-nodes = [Node(namescheme + str(num).zfill(nodeNumPadding)) for num in range(args.max)]
+nodes = [Node('{0}-{1}-{2}'.format(namescheme, cpus, str(num).zfill(nodeNumPadding))) for num in range(args.max) for cpus in [1, 2, 4, 8, 16, 32]]
 
 class Job:
     def __init__(self, num):
@@ -59,7 +61,7 @@ class Job:
     def timeWaiting(self):
         return time.time() - self.time
 
-jobs = []
+jobs = {'clic-{0}'.format(cpus) : [] for cpus in [1, 2, 4, 8, 16, 32]}
 
 def getNode(nodeName):
     return next(node for node in nodes if node.name == nodeName)
@@ -73,20 +75,22 @@ def log(message):
 def getNodesInState(state):
     return {node for node in nodes if node.state == state}
 
-def create(numToCreate):
+def create(numToCreate, partition):
     if numToCreate < 0:
         return
     existingDisks = {getNode(nodeName) for nodeName in os.popen('gcloud compute disks list | tail -n+2 | awk \'{print $1}\'').read().split() if validName.search(nodeName)}
-    freeNodes = getNodesInState('') - existingDisks
+    freeNodes = [node for node in getNodesInState('') - existingDisks if node.partition == partition]
     for node in sorted(freeNodes, key=lambda node: node.num)[0:int(numToCreate)]:
         node.setState('C')
         subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Creating"'])
         log('Creating {}'.format(node.name))
-        subprocess.Popen('gcloud compute disks create {0} --size 10 --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-standard-1" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {2}'.format(node.name, namescheme, logfile), shell=True)
+        subprocess.Popen('gcloud compute disks create {0} --size 10 --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-standard-{2}" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {3}'.format(node.name, namescheme, node.cpus, logfile), shell=True)
 
-def delete(numToDelete):
+def delete(numToDelete, partition):
     idleNodes = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep "idle" | awk \'{print $2}\'').read().split() if validName.search(nodeName)]
-    for node in reversed(idleNodes):
+    #Narrow by partition
+    idleNodes = [node for node in idleNodes if node.partition == partition]
+    for node in idleNodes:
         if numToDelete <= 0:
             return
         if node.state == 'R' and node.timeInState() >= minRunTime:
@@ -157,42 +161,45 @@ def mainLoop():
                 log('ERROR: Node {} hung on boot!'.format(node.name))
         
         # Book keeping for jobs
-        #rJobs = os.popen('squeue -h -t r,cg,cf -o %A').read().split()
-        qJobs = os.popen('squeue -h -t pd -o %A').read().split()
+        # jobs = {partition : [job, ...], ...}
+        # qJobs = [[jobNum, partition], ...]
+        qJobs = [job.split() for job in os.popen('squeue -h -t pd -o "%A %P"').read().strip().split('\n')]
         # Delete dequeued jobs
-        for job in jobs:
-            if job.num not in qJobs:
-                jobs.remove(job)
+        for partition in jobs:
+            for job in jobs[partition]:
+                if job.num not in [qJob[0] for qJob in qJobs if qJob[1] == partition]:
+                    jobs[partition].remove(job)
         # Add new jobs
         for job in qJobs:
-            if job not in [j.num for j in jobs]:
-                jobs.append(Job(job))
+            if job[0] not in [j.num for j in jobs[job[1]]]:
+                jobs[partition].append(Job(job[0]))
         
-        # Add nodes
-        numIdle = parseInt(os.popen('sinfo -h -r -o %A | cut -d "/" -f 2').read())
-        creating = getNodesInState('C')
-        running = getNodesInState('R')
-        if len(creating) + len(running) == 0 and len(jobs) > 0:
-            create(int((len(jobs) + 1) / 2))
-        else:
-            # SLURM may not have had the chance to utilize some "running" nodes
-            for node in running:
-                if node.timeInState() < waitTime:
-                    numIdle += 1
-            jobsWaitingTooLong = sum(1 for job in jobs if job.timeWaiting() > waitTime)
-            create(int((jobsWaitingTooLong - len(creating) + 1) / 2 - numIdle))
-        
-        # Delete nodes
-        if numIdle > 0 and len(jobs) == 0:
-            if idleTime == 0:
-                idleTime = 1 # We want to do at least one full cycle
+        # idle = {partition : numIdle, ...}
+        idle = {partInfo.split()[1].strip('*') : partInfo.split()[0].split('/')[1] for partInfo in os.popen('sinfo -h -r -o "%A %P"').read().strip().split('\n')}
+        for partition in jobs:
+            # Add nodes
+            creating = {node for node in getNodesInState('C') if node.partition == partition}
+            running = {node for node in getNodesInState('R') if node.partition == partition}
+            if len(creating) + len(running) == 0 and len(jobs[partition]) > 0:
+                create(int((len(jobs) + 1) / 2), partition)
             else:
-                idleTime += time.time() - lastCallTime
-            if idleTime > waitTime:
-                delete(int((numIdle + 1) / 2))
+                # SLURM may not have had the chance to utilize some "running" nodes
+                for node in running:
+                    if node.timeInState() < waitTime:
+                        idle[partition] += 1
+                jobsWaitingTooLong = sum(1 for job in jobs if job.timeWaiting() > waitTime)
+                create(int((jobsWaitingTooLong - len(creating) + 1) / 2 - idle[partition]), partition)
+            # Delete nodes
+            if idle[partition] > 0 and len(jobs) == 0:
+                if idleTime == 0:
+                    idleTime = 1 # We want to do at least one full cycle
+                else:
+                    idleTime += time.time() - lastCallTime
+                if idleTime > waitTime:
+                    delete(int((numIdle + 1) / 2), partition)
+                    idleTime = 0
+            else:
                 idleTime = 0
-        else:
-            idleTime = 0
             
         lastCallTime = time.time()
 
