@@ -30,16 +30,18 @@ uptime() {
 
 usage() {
 	echo "Usage:"
-	echo "-c --continuous <iterations>  repeat job submission every 10 seconds <iterations> times"
+	echo "-w                            wait time between job submissions"
+	echo "-c --continuous <iterations>  repeat job submission <iterations> times"
 	echo "-n <number>                   the number of jobs submitted (X or X-Y for range)"
 	echo "-d <duration>                 the duration of each job (X or X-Y for range)"
 	echo "-h                            print this help message and exit"
 }
 
+WAIT=10
 CONTINUOUS=1
 NUMBER=10
 DURATION=20
-ARGS=`getopt -n clic-test -o hc:n:d: --long continuous: -- "$@"`
+ARGS=`getopt -n clic-test -o w:hc:n:d: --long continuous: -- "$@"`
 if [ $? != 0 ] ; then
 	usage
 	exit 1
@@ -47,6 +49,10 @@ fi
 eval set -- "$ARGS"
 while true; do
 	case $1 in
+		-w)
+			WAIT="$2"
+			shift 2
+			;;
 		-h)
 			usage
 			exit 0
@@ -76,18 +82,34 @@ done
 startTime=`uptime`
 echo "# Submits $NUMBER $DURATION second jobs every 10 seconds for $CONTINUOUS iterations" > out
 echo "time jobsQueued jobsRunning nodesUp" >> out
-while :; do
-	if [ "$CONTINUOUS" -gt 0 ]; then
-		execute `rand $NUMBER` `rand $DURATION`
-		let "CONTINUOUS -= 1"
-	fi
-        sleep 10
-        rCount=`squeue -h -t r,cg,cf -o %A | wc -l`
-        qCount=`squeue -h -t pd -o %A | wc -l`
-        nodesUp=`gcloud compute instances list | tail -n+3 | wc -l`
-        curTime=$(expr $(uptime) - $startTime)
-        echo "$curTime $qCount $rCount $nodesUp" >> out
-        if [ $qCount -eq 0 ] && [ $rCount -eq 0 ] && [ $nodesUp -eq 0 ] && [ $CONTINUOUS -eq 0 ]; then
-                break
-        fi
-done
+
+submit() {
+	while :; do
+		if [ "$CONTINUOUS" -gt 0 ]; then
+			execute `rand $NUMBER` `rand $DURATION`
+			let "CONTINUOUS -= 1"
+		else
+			break
+		fi
+	        sleep $WAIT
+	done
+}
+
+record() {
+	minRunItr=5
+	while :; do
+		let "minRunItr -= 1"
+	        rCount=`squeue -h -t r,cg,cf -o %A | wc -l`
+	        qCount=`squeue -h -t pd -o %A | wc -l`
+	        nodesUp=`gcloud compute instances list | tail -n+3 | wc -l`
+	        curTime=$(expr $(uptime) - $startTime)
+	        echo "$curTime $qCount $rCount $nodesUp" >> out
+		sleep 10
+	        if [ $qCount -eq 0 ] && [ $rCount -eq 0 ] && [ $nodesUp -eq 0 ] && [ $minRunItr -le 0 ]; then
+	                break
+	        fi
+	done
+}
+
+submit &
+record &

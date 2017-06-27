@@ -21,7 +21,7 @@ where
     * NAME is the hostname of the GCE instance
     * The `--cloud` flag is set if `install` is being run from NAME in GCE
 
-3. If installing using a cloud headnode, shut down, snapshot, and re-start the headnode. The snapshot must have the same name as the headnode so that CLIC can use it to create additional instances.
+3. If installing using a cloud headnode, then shut down, snapshot, and re-start the headnode. The snapshot must have the same name as the headnode so that CLIC can use it to create additional instances.
 
 4. Use sbatch to submit jobs. It takes about 2 minutes for CLIC to create cloud instances to handle jobs.
 
