@@ -155,7 +155,6 @@ def mainLoop():
         for node in getNodesInState('C'):
             if node.timeInState() > 200:
                 log('ERROR: Node {} hung on boot!'.format(node.name))
-
         
         # Book keeping for jobs
         #rJobs = os.popen('squeue -h -t r,cg,cf -o %A').read().split()
@@ -169,7 +168,7 @@ def mainLoop():
             if job not in [j.num for j in jobs]:
                 jobs.append(Job(job))
         
-        # Add and delete nodes
+        # Add nodes
         numIdle = parseInt(os.popen('sinfo -h -r -o %A | cut -d "/" -f 2').read())
         creating = getNodesInState('C')
         running = getNodesInState('R')
@@ -182,7 +181,8 @@ def mainLoop():
                     numIdle += 1
             jobsWaitingTooLong = sum(1 for job in jobs if job.timeWaiting() > waitTime)
             create(int((jobsWaitingTooLong - len(creating) + 1) / 2 - numIdle))
-       
+        
+        # Delete nodes
         if numIdle > 0 and len(jobs) == 0:
             if idleTime == 0:
                 idleTime = 1 # We want to do at least one full cycle
@@ -203,6 +203,7 @@ class exportNodes(rpyc.Service):
         pass
     def exposed_getNodes(self):
         return nodes
+
 def startServer():
     if __name__ == "__main__":
         from rpyc.utils.server import ThreadedServer
