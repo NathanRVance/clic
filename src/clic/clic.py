@@ -171,7 +171,7 @@ def mainLoop():
                     jobs[partition].remove(job)
         # Add new jobs
         for qJob in qJobs:
-            if qJob[0] not in [job.num for job in jobs[qJob[1]]]:
+            if qJob[1] in jobs and qJob[0] not in [job.num for job in jobs[qJob[1]]]:
                 jobs[qJob[1]].append(Job(qJob[0]))
         
         # idle = {partition : numIdle, ...}
