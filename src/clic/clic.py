@@ -160,7 +160,7 @@ def mainLoop():
             if node.timeInState() > 200:
                 log('ERROR: Node {} hung on boot!'.format(node.name))
         
-        # Book keeping for jobs
+        # Book keeping for jobs. Modify existing structure rather than replacing because jobs keep track of wait time.
         # jobs = {partition : [job, ...], ...}
         # qJobs = [[jobNum, partition], ...]
         qJobs = [job.split() for job in os.popen('squeue -h -t pd -o "%A %P"').read().strip().split('\n')]
@@ -170,9 +170,9 @@ def mainLoop():
                 if job.num not in [qJob[0] for qJob in qJobs if qJob[1] == partition]:
                     jobs[partition].remove(job)
         # Add new jobs
-        for job in qJobs:
-            if job[0] not in [j.num for j in jobs[job[1]]]:
-                jobs[partition].append(Job(job[0]))
+        for qJob in qJobs:
+            if qJob[0] not in [job.num for job in jobs[qJob[1]]]:
+                jobs[qJob[1]].append(Job(qJob[0]))
         
         # idle = {partition : numIdle, ...}
         idle = {partInfo.split()[1].strip('*') : partInfo.split()[0].split('/')[1] for partInfo in os.popen('sinfo -h -r -o "%A %P"').read().strip().split('\n')}
