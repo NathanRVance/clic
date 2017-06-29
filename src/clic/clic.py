@@ -168,8 +168,14 @@ def mainLoop():
                 if job.num not in [qJob[0] for qJob in qJobs if qJob[1] == partition]:
                     jobs[partition].remove(job)
         # Add new jobs
+        # Sometimes, immediately after slurmctld restarts, running jobs are listed as queued. Only queue jobs with a number greater than any other job.
+        sampleNum = 0
+        for partition in jobs:
+            if len(jobs[partition]) > 0:
+                sampleNum = int(jobs[partition][0].num)
+                break
         for qJob in qJobs:
-            if qJob[1] in jobs and qJob[0] not in [job.num for job in jobs[qJob[1]]]:
+            if qJob[1] in jobs and qJob[0] not in [job.num for job in jobs[qJob[1]]] and int(qJob[0]) > sampleNum:
                 jobs[qJob[1]].append(Job(qJob[0]))
         
         # idle = {partition : numIdle, ...}
