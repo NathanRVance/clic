@@ -77,6 +77,10 @@ sudo chown slurm: /var/log/slurm/slurm_jobacct.log /var/log/slurm/slurm_jobcomp.
 sudo mkdir /etc/slurm
 sudo chown slurm: /etc/slurm
 
+# Add job_submit.lua so that jobs go to the correct partitions
+echo -e "\n/etc/slurm/job_submit.lua:"
+cat $CLIC_ROOT/files/job_submit.lua | sudo tee /etc/slurm/job_submit.lua
+
 # Make a good default slurm.conf
 echo "Using $namescheme as the base name for the cluster"
 echo -e "\n/etc/slurm/slurm.conf:"

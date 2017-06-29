@@ -167,7 +167,7 @@ def mainLoop():
         # Delete dequeued jobs
         for partition in jobs:
             for job in jobs[partition]:
-                if job.num not in [qJob[0] for qJob in qJobs if qJob[1] == partition]:
+                if job.num not in [qJob[0] for qJob in qJobs if len(qJob) > 1 and qJob[1] == partition]:
                     jobs[partition].remove(job)
         # Add new jobs
         for qJob in qJobs:
@@ -175,20 +175,20 @@ def mainLoop():
                 jobs[qJob[1]].append(Job(qJob[0]))
         
         # idle = {partition : numIdle, ...}
-        idle = {partInfo.split()[1].strip('*') : partInfo.split()[0].split('/')[1] for partInfo in os.popen('sinfo -h -r -o "%A %P"').read().strip().split('\n')}
+        idle = {partInfo.split()[1].strip('*') : parseInt(partInfo.split()[0].split('/')[1]) for partInfo in os.popen('sinfo -h -r -o "%A %P"').read().strip().split('\n')}
         for partition in jobs:
             # Add nodes
             creating = {node for node in getNodesInState('C') if node.partition == partition}
             running = {node for node in getNodesInState('R') if node.partition == partition}
             if len(creating) + len(running) == 0 and len(jobs[partition]) > 0:
-                create(int((len(jobs) + 1) / 2), partition)
+                create(int((len(jobs[partition]) + 1) / 2), partition)
             else:
                 # SLURM may not have had the chance to utilize some "running" nodes
                 for node in running:
                     if node.timeInState() < waitTime:
                         idle[partition] += 1
-                jobsWaitingTooLong = sum(1 for job in jobs if job.timeWaiting() > waitTime)
-                create(int((jobsWaitingTooLong - len(creating) + 1) / 2 - idle[partition]), partition)
+                jobsWaitingTooLong = [job for job in jobs[partition] if job.timeWaiting() > waitTime]
+                create(int((len(jobsWaitingTooLong) - len(creating) + 1) / 2 - idle[partition]), partition)
             # Delete nodes
             if idle[partition] > 0 and len(jobs) == 0:
                 if idleTime == 0:
