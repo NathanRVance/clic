@@ -195,7 +195,7 @@ def mainLoop():
                 else:
                     idleTime += time.time() - lastCallTime
                 if idleTime > waitTime:
-                    delete(int((numIdle + 1) / 2), partition)
+                    delete(int((idle[partition] + 1) / 2), partition)
                     idleTime = 0
             else:
                 idleTime = 0
