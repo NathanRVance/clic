@@ -17,7 +17,7 @@ settings = config['Daemon']
 # Constants
 waitTime = settings.getint('waitTime')
 maxNodes = settings.getint('maxNodes')
-minRuntime = settings.getInt('minRuntime')
+minRuntime = settings.getint('minRuntime')
 
 user = settings['user']
 namescheme = settings['namescheme']
