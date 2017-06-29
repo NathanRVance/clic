@@ -99,8 +99,6 @@ def delete(numToDelete, partition):
             numToDelete -= 1
 
 def mainLoop():
-    idleTime = 0
-    lastCallTime = time.time()
     while True:
         if not args.cloud:
             synchosts.addAll()
@@ -124,7 +122,7 @@ def mainLoop():
             # There's a chance they came up with different IPs. Restart slurmctld to avoid errors.
             log('WARNING: Restarting slurmctld')
             subprocess.Popen(['systemctl', 'restart', 'slurmctld'])
-
+        
         # Nodes that were deleting and now are gone:
         nodesWentDown = False
         for node in getNodesInState('D') - cloudAll:
@@ -190,17 +188,7 @@ def mainLoop():
                 create(int((len(jobsWaitingTooLong) - len(creating) + 1) / 2 - idle[partition] - unutilized), partition)
             # Delete nodes
             if idle[partition] > 0 and len(jobs[partition]) == 0:
-                if idleTime == 0:
-                    idleTime = 1 # We want to do at least one full cycle
-                else:
-                    idleTime += time.time() - lastCallTime
-                if idleTime > waitTime:
-                    delete(int((idle[partition] + 1) / 2), partition)
-                    idleTime = 0
-            else:
-                idleTime = 0
-            
-        lastCallTime = time.time()
+                delete(int((idle[partition] + 1) / 2), partition)
 
 class exportNodes(rpyc.Service):
     def on_connect(self):
