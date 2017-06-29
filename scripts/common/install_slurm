@@ -96,7 +96,7 @@ if [ ! -e "/etc/slurm/slurm.key" ]; then
 fi
 
 # Set up exports
-echo -e "\n/etc/exports:"
 if ! cat /etc/exports | grep -q "`cat $CLIC_ROOT/files/exports`"; then
+	echo -e "\n/etc/exports:"
 	cat $CLIC_ROOT/files/exports | sudo tee --append /etc/exports
 fi
