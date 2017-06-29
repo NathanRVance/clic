@@ -12,13 +12,15 @@ if ! $cloud; then
 fi
 sudo clic-copyid --generate --append -u `whoami` $user `whoami`
 
+#Create a config file
+sudo mkdir /etc/clic/
+echo -e "\n/etc/clic/clic.conf:"
+cat $CLIC_ROOT/files/clic.conf | sed "s/NAMESCHEME/$namescheme/g" | sed "s/CLOUD/$cloud/g" | sed "s/USER/$user/g" | sudo tee /etc/clic/clic.conf
+
 #Create a service to start the clic daemon
 echo -e "\n/etc/systemd/system/clic.service:"
 path="`which clic`"
-if $cloud; then
-	cat $CLIC_ROOT/files/clic.service | sed "s&PATH&$path&g" | sed "s/CLOUD/--cloud/g" | sed "s/USER/$user/g" | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/systemd/system/clic.service
-else
-	cat $CLIC_ROOT/files/clic.service | sed "s&PATH&$path&g" | sed "s/CLOUD //g" | sed "s/USER/$user/g" | sed "s/NAMESCHEME/$namescheme/g" | sudo tee /etc/systemd/system/clic.service
-fi
+cat $CLIC_ROOT/files/clic.service | sed "s&PATH&$path&g" | sudo tee /etc/systemd/system/clic.service
+
 sudo systemctl enable clic.service
 sudo systemctl restart clic.service

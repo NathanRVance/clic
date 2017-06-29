@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import subprocess
 import os
 import re
@@ -9,22 +8,21 @@ from threading import Thread
 from clic import initnode
 from clic import nodesup
 from clic import synchosts
+import configparser
 
-parser = argparse.ArgumentParser(description='This is the CLIC daemon, which monitors the SLURM queue and creates and deletes compute nodes as necessary.')
-parser.add_argument('-c', '--cloud', action='store_true', help='this is running on a cloud computer')
-parser.add_argument('--logfile', nargs=1, default='/var/log/clic.log', help='file to output logs to (default: /var/log/clic.log)')
-parser.add_argument('--max', nargs=1, type=int, default=100, help='maximum number of compute nodes in use (default: 100)')
-parser.add_argument('user', metavar='USER', nargs=1, help='a user on compute nodes with passwordless sudo privilages')
-parser.add_argument('namescheme', metavar='NAMESCHEME', nargs=1, help='the base name of the compute nodes')
-args = parser.parse_args()
+config = configparser.ConfigParser()
+config.read('/etc/slurm/slurm.conf')
+settings = config['Daemon']
 
 # Constants
-waitTime = 15
-minRunTime = 600 # Let nodes run at least 10 minutes before deleting
+waitTime = int(settings['waitTime'])
+maxNodes = int(settings['maxNodes'])
+minRuntime = int(settings['minRuntime'])
 
-user = args.user[0]
-namescheme = args.namescheme[0]
-logfile = args.logfile
+user = settings['user']
+namescheme = settings['namescheme']
+logfile = settings['logfile']
+isCloud = bool(settings['cloudHeadnode'])
 validName = re.compile('^' + namescheme + '-\d+cpu-\d+$')
 
 def parseInt(value):
@@ -50,7 +48,7 @@ class Node:
     def timeInState(self):
         return time.time() - self.timeEntered
 
-nodes = [Node(cpus, num) for num in range(args.max) for cpus in [1, 2, 4, 8, 16, 32]]
+nodes = [Node(cpus, num) for num in range(maxNodes) for cpus in [1, 2, 4, 8, 16, 32]]
 
 class Job:
     def __init__(self, num):
@@ -91,7 +89,7 @@ def delete(numToDelete, partition):
     for node in idleNodes:
         if numToDelete <= 0:
             return
-        if node.state == 'R' and node.timeInState() >= minRunTime:
+        if node.state == 'R' and node.timeInState() >= minRuntime:
             node.setState('D')
             log('Deleting {}'.format(node.name))
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
@@ -100,7 +98,7 @@ def delete(numToDelete, partition):
 
 def mainLoop():
     while True:
-        if not args.cloud:
+        if not isCloud:
             synchosts.addAll()
         # Start with some book keeping
         slurmRunning = {getNode(nodeName) for nodeName in os.popen('sinfo -h -N -r -o %N').read().split() if validName.search(nodeName)}
@@ -112,7 +110,7 @@ def mainLoop():
         for node in cloudRunning:
             if node.state == 'C':
                 node.setState('R')
-                initnode.init(user, node.name, args.cloud)
+                initnode.init(user, node.name, isCloud)
                 names.append(node.name)
                 log('Node {} came up'.format(node.name))
         if len(names) > 0:
@@ -146,18 +144,18 @@ def mainLoop():
         
         # We think they're running, but slurm doesn't:
         for node in getNodesInState('R') - slurmRunning:
-            if node.timeInState() > waitTime * 2:
+            if node.timeInState() > 30:
                 log('ERROR: Node {} is unresponsive!'.format(node.name))
-        
+
         # Nodes are running but aren't registered:
         for node in getNodesInState('') & cloudRunning:
             log('ERROR: Encountered unregistered node {}!'.format(node.name))
-        
+
         # Nodes that are taking way too long to boot:
         for node in getNodesInState('C'):
             if node.timeInState() > 200:
                 log('ERROR: Node {} hung on boot!'.format(node.name))
-        
+
         # Book keeping for jobs. Modify existing structure rather than replacing because jobs keep track of wait time.
         # jobs = {partition : [job, ...], ...}
         # qJobs = [[jobNum, partition], ...]
@@ -177,7 +175,7 @@ def mainLoop():
         for qJob in qJobs:
             if qJob[1] in jobs and qJob[0] not in [job.num for job in jobs[qJob[1]]] and int(qJob[0]) > sampleNum:
                 jobs[qJob[1]].append(Job(qJob[0]))
-        
+
         # idle = {partition : numIdle, ...}
         sinfo = ['']
         while sinfo == ['']:
@@ -193,7 +191,7 @@ def mainLoop():
                 # SLURM may not have had the chance to utilize some "running" nodes
                 unutilized = 0
                 for node in running:
-                    if node.timeInState() < waitTime:
+                    if node.timeInState() < 15:
                         unutilized += 1
                 jobsWaitingTooLong = [job for job in jobs[partition] if job.timeWaiting() > waitTime]
                 create(int((len(jobsWaitingTooLong) + 1) / 2 - len(creating) - idle[partition] - unutilized), partition)
@@ -218,12 +216,12 @@ def startServer():
 def main():
     Thread(target = startServer).start()
 
-    if os.popen('hostname -s').read().strip() == namescheme or not args.cloud:
+    if os.popen('hostname -s').read().strip() == namescheme or not isCloud:
         # This is the head node
         log('Starting clic as a head node')
         log('Starting slurmctld.service')
         subprocess.Popen(['systemctl', 'restart', 'slurmctld.service']).wait()
-        if args.cloud:
+        if isCloud:
             zone = os.popen('gcloud compute instances list | grep "$(hostname) " | awk \'{print $2}\'').read()
             log('Configuring gcloud for zone {}'.format(zone))
             subprocess.Popen(['gcloud', 'config', 'set', 'compute/zone', zone])

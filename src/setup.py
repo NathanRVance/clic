@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
         name='clic',
-        version='0.0.5',
+        version='0.0.6',
         description='CLuster In the Cloud',
         long_description='Dynamically resizing high throughput cloud computing',
         url='https://github.com/nathanrvance/clic',
