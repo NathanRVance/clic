@@ -3,8 +3,10 @@ import subprocess
 import re
 from clic import pssh
 
-def responds(user):
-    return [node for node in all(True) if pssh.canConnect(user, user, node)]
+def responds(user, nameRegex = None):
+    if nameRegex is None:
+        nameRegex = re.compile('.*')
+    return [node for node in all(True) if nameRegex.search(node) and pssh.canConnect(user, user, node)]
 
 def all(running):
     gcloud = subprocess.Popen(['gcloud', 'compute', 'instances', 'list'], stdout=subprocess.PIPE)
