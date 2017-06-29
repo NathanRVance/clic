@@ -15,9 +15,9 @@ config.read('/etc/clic/clic.conf')
 settings = config['Daemon']
 
 # Constants
-waitTime = settings.getint(['waitTime'])
-maxNodes = settings.getint(['maxNodes'])
-minRuntime = settings.getInt(['minRuntime'])
+waitTime = settings.getint('waitTime')
+maxNodes = settings.getint('maxNodes')
+minRuntime = settings.getInt('minRuntime')
 
 user = settings['user']
 namescheme = settings['namescheme']
