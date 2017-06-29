@@ -122,6 +122,7 @@ def mainLoop():
             # There's a chance they came up with different IPs. Restart slurmctld to avoid errors.
             log('WARNING: Restarting slurmctld')
             subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
+            continue
         
         # Nodes that were deleting and now are gone:
         nodesWentDown = False
@@ -134,6 +135,7 @@ def mainLoop():
             # There's a chance they'll come up later with different IPs. Restart slurmctld to avoid errors.
             log('WARNING: Restarting slurmctld')
             subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
+            continue
         
         # Error conditions (log but don't do anything about it):
         # We think they're up, but the cloud doesn't:
@@ -188,7 +190,7 @@ def mainLoop():
                     if node.timeInState() < waitTime:
                         unutilized += 1
                 jobsWaitingTooLong = [job for job in jobs[partition] if job.timeWaiting() > waitTime]
-                create(int((len(jobsWaitingTooLong) - len(creating) + 1) / 2 - idle[partition] - unutilized), partition)
+                create(int((len(jobsWaitingTooLong) + 1) / 2 - len(creating) - idle[partition] - unutilized), partition)
             # Delete nodes
             if idle[partition] > 0 and len(jobs[partition]) == 0:
                 delete(int((idle[partition] + 1) / 2), partition)

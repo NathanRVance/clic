@@ -30,7 +30,7 @@ uptime() {
 
 usage() {
 	echo "Usage:"
-	echo "-w                            wait time between job submissions"
+	echo "-w <time>                     wait time between job submissions"
 	echo "-c --continuous <iterations>  repeat job submission <iterations> times"
 	echo "-n <number>                   the number of jobs submitted (X or X-Y for range)"
 	echo "-d <duration>                 the duration of each job (X or X-Y for range)"
