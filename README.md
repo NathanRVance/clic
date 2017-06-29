@@ -7,12 +7,12 @@ CLIC creates a virtual, automatically resizing cluster in a cloud environment (c
   * Supported OS's: Ubuntu, Debian, CentOS
   * Queueing system: SLURM
   * File sharing: NFS through a SSH tunnel
-  * Implementation languages: bash scripts for installation and python 3 for execution
+  * Implementation languages: bash scripts for installation and python3 for execution
   * Cloud environment: Google Compute Engine
 
 ## Quickstart
 
-1. Create a GCE instance. The name given this instance will become the base name of the cluster. For example, if you name it NAME, then instances created by CLIC will be NAME00, NAME01, and so forth.
+1. Create a GCE instance. The name given this instance will become the base name of the cluster. For example, if you name it NAME, then instances created by CLIC will follow the pattern NAME-PARTITION-ID, where PARTITION is the SLURM partition that the node belongs to and ID differentiates between nodes in a partition.
 
 2. Execute the `install` script  
 &nbsp;&nbsp;`./install --user USER --namescheme NAME [--cloud]`  
@@ -28,3 +28,5 @@ where
 ## Behind the Scenes
 
 CLIC is a daemon that monitors the SLURM queue. If CLIC detects that the cluster is overwhelmed by jobs, it creates new instances to handle these jobs. When the new instances come online, CLIC notifies SLURM that they are able to recieve jobs, and SLURM incorporates them into the cluster. If CLIC detects that the cluster is underutilized, it notifies SLURM that it is removing some of the idle instances, then deletes those intances from the cloud.
+
+CLIC supports utilizing multiple cpus in cloud nodes. To do, SLURM is set up to use partition for each number of cpus (1, 2, 4, 8, 16, and 32). This is preferable to dumping nodes of these characteristics into a single partition because then SLURM could then underutilize a multi-core machine for long periods of time, rendering CLIC unable to free up those resources. A Lua script (/etc/slurm/job\_submit.lua) automatically places jobs in the correct partition based on requested cpus.

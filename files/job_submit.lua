@@ -3,7 +3,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 		local cpus = 1
 		for power = 0,5 do
 			if cpus >= job_desc.min_cpus then
-				job_desc.partition = "clic-" .. cpus
+				job_desc.partition = cpus .. "cpu"
 				slurm.log_info("Assigning to partition: %s.", job_desc.partition)
 				break
 			end

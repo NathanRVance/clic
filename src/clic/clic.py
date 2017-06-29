@@ -25,9 +25,7 @@ minRunTime = 600 # Let nodes run at least 10 minutes before deleting
 user = args.user[0]
 namescheme = args.namescheme[0]
 logfile = args.logfile
-maxNodeNum = args.max - 1
-nodeNumPadding = len(str(maxNodeNum))
-validName = re.compile('^' + namescheme + '-\d+-\d{' + str(nodeNumPadding) + '}$')
+validName = re.compile('^' + namescheme + '-\d+cpu-\d+$')
 
 def parseInt(value):
     try:
@@ -36,11 +34,11 @@ def parseInt(value):
         return 0
 
 class Node:
-    def __init__(self, name):
-        self.name = name
-        self.num = parseInt(name[-nodeNumPadding:])
-        self.cpus = parseInt(re.search('(?<=-)\d*(?=-)', name).group(0))
-        self.partition = 'clic-' + str(self.cpus)
+    def __init__(self, cpus, num):
+        self.cpus = cpus
+        self.partition = '{0}cpu'.format(cpus)
+        self.num = num
+        self.name = '{0}-{1}-{2}'.format(namescheme, self.partition, num)
         self.state = ''
         self.timeEntered = time.time()
     def __str__(self):
@@ -52,7 +50,7 @@ class Node:
     def timeInState(self):
         return time.time() - self.timeEntered
 
-nodes = [Node('{0}-{1}-{2}'.format(namescheme, cpus, str(num).zfill(nodeNumPadding))) for num in range(args.max) for cpus in [1, 2, 4, 8, 16, 32]]
+nodes = [Node(cpus, num) for num in range(args.max) for cpus in [1, 2, 4, 8, 16, 32]]
 
 class Job:
     def __init__(self, num):
@@ -61,7 +59,7 @@ class Job:
     def timeWaiting(self):
         return time.time() - self.time
 
-jobs = {'clic-{0}'.format(cpus) : [] for cpus in [1, 2, 4, 8, 16, 32]}
+jobs = {'{0}cpu'.format(cpus) : [] for cpus in [1, 2, 4, 8, 16, 32]}
 
 def getNode(nodeName):
     return next(node for node in nodes if node.name == nodeName)
@@ -97,7 +95,7 @@ def delete(numToDelete, partition):
             node.setState('D')
             log('Deleting {}'.format(node.name))
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
-            subprocess.Popen('while true; do if [ -n "`sinfo -h -N -o "%N %t" | grep {0} | awk \'{{print $2}}\' | grep drain`" ]; then echo Y | gcloud compute instances delete {0}; break; fi; sleep 10; done'.format(node.name), shell=True)
+            subprocess.Popen('while true; do if [ -n "`sinfo -h -N -o "%N %t" | grep "{0} " | awk \'{{print $2}}\' | grep drain`" ]; then echo Y | gcloud compute instances delete {0}; break; fi; sleep 10; done'.format(node.name), shell=True)
             numToDelete -= 1
 
 def mainLoop():
@@ -163,11 +161,11 @@ def mainLoop():
         # Book keeping for jobs. Modify existing structure rather than replacing because jobs keep track of wait time.
         # jobs = {partition : [job, ...], ...}
         # qJobs = [[jobNum, partition], ...]
-        qJobs = [job.split() for job in os.popen('squeue -h -t pd -o "%A %P"').read().strip().split('\n')]
+        qJobs = [job.split() for job in os.popen('squeue -h -t pd -o "%A %P"').read().strip().split('\n') if len(job.split()) == 2]
         # Delete dequeued jobs
         for partition in jobs:
             for job in jobs[partition]:
-                if job.num not in [qJob[0] for qJob in qJobs if len(qJob) > 1 and qJob[1] == partition]:
+                if job.num not in [qJob[0] for qJob in qJobs if qJob[1] == partition]:
                     jobs[partition].remove(job)
         # Add new jobs
         for qJob in qJobs:
@@ -184,13 +182,14 @@ def mainLoop():
                 create(int((len(jobs[partition]) + 1) / 2), partition)
             else:
                 # SLURM may not have had the chance to utilize some "running" nodes
+                unutilized = 0
                 for node in running:
                     if node.timeInState() < waitTime:
-                        idle[partition] += 1
+                        unutilized += 1
                 jobsWaitingTooLong = [job for job in jobs[partition] if job.timeWaiting() > waitTime]
-                create(int((len(jobsWaitingTooLong) - len(creating) + 1) / 2 - idle[partition]), partition)
+                create(int((len(jobsWaitingTooLong) - len(creating) + 1) / 2 - idle[partition] - unutilized), partition)
             # Delete nodes
-            if idle[partition] > 0 and len(jobs) == 0:
+            if idle[partition] > 0 and len(jobs[partition]) == 0:
                 if idleTime == 0:
                     idleTime = 1 # We want to do at least one full cycle
                 else:
