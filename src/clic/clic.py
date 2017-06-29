@@ -121,7 +121,7 @@ def mainLoop():
                 subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
             # There's a chance they came up with different IPs. Restart slurmctld to avoid errors.
             log('WARNING: Restarting slurmctld')
-            subprocess.Popen(['systemctl', 'restart', 'slurmctld'])
+            subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
         
         # Nodes that were deleting and now are gone:
         nodesWentDown = False
@@ -133,7 +133,7 @@ def mainLoop():
         if nodesWentDown:
             # There's a chance they'll come up later with different IPs. Restart slurmctld to avoid errors.
             log('WARNING: Restarting slurmctld')
-            subprocess.Popen(['systemctl', 'restart', 'slurmctld'])
+            subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
         
         # Error conditions (log but don't do anything about it):
         # We think they're up, but the cloud doesn't:
@@ -171,7 +171,10 @@ def mainLoop():
                 jobs[qJob[1]].append(Job(qJob[0]))
         
         # idle = {partition : numIdle, ...}
-        idle = {partInfo.split()[1].strip('*') : parseInt(partInfo.split()[0].split('/')[1]) for partInfo in os.popen('sinfo -h -r -o "%A %P"').read().strip().split('\n')}
+        sinfo = ['']
+        while sinfo == ['']:
+            sinfo = os.popen('sinfo -h -r -o "%A %P"').read().strip().split('\n')
+        idle = {partInfo.split()[1].strip('*') : parseInt(partInfo.split()[0].split('/')[1]) for partInfo in sinfo}
         for partition in jobs:
             # Add nodes
             creating = {node for node in getNodesInState('C') if node.partition == partition}
@@ -211,7 +214,7 @@ def main():
         # This is the head node
         log('Starting clic as a head node')
         log('Starting slurmctld.service')
-        subprocess.Popen(['systemctl', 'restart', 'slurmctld.service'])
+        subprocess.Popen(['systemctl', 'restart', 'slurmctld.service']).wait()
         if args.cloud:
             zone = os.popen('gcloud compute instances list | grep "$(hostname) " | awk \'{print $2}\'').read()
             log('Configuring gcloud for zone {}'.format(zone))
