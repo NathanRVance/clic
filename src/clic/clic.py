@@ -11,18 +11,18 @@ from clic import synchosts
 import configparser
 
 config = configparser.ConfigParser()
-config.read('/etc/slurm/slurm.conf')
+config.read('/etc/clic/clic.conf')
 settings = config['Daemon']
 
 # Constants
-waitTime = int(settings['waitTime'])
-maxNodes = int(settings['maxNodes'])
-minRuntime = int(settings['minRuntime'])
+waitTime = settings.getint(['waitTime'])
+maxNodes = settings.getint(['maxNodes'])
+minRuntime = settings.getInt(['minRuntime'])
 
 user = settings['user']
 namescheme = settings['namescheme']
 logfile = settings['logfile']
-isCloud = bool(settings['cloudHeadnode'])
+isCloud = settings.getboolean('cloudHeadnode')
 validName = re.compile('^' + namescheme + '-\d+cpu-\d+$')
 
 def parseInt(value):
