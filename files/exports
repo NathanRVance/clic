@@ -1,1 +1,2 @@
 /home localhost(insecure,rw,sync,no_subtree_check,no_root_squash)
+/etc/slurm localhost(insecure,ro,sync,no_subtree_check,no_root_squash)

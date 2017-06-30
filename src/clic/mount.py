@@ -10,10 +10,14 @@ def mount(user, host):
     # Set up nfs
     os.system('sudo mount -t nfs4 -o port=3049,rw localhost:/home /home')
     # Fix /home/*/.ssh
-    # Create a directory to mount / to
+    # Create a directory to bind / to
     os.system('if [ ! -d "/bind-root" ]; then sudo mkdir /bind-root; fi')
     os.system('sudo mount --bind / /bind-root')
     os.system('for user in `ls /home`; do sudo mount --bind /bind-root/home/$user/.ssh /home/$user/.ssh; done')
+    # Mount /etc/slurm
+    os.system('sudo mount -t nfs4 -o port=3049,ro localhost:/etc/slurm /etc/slurm')
+    # (re)start slurmd
+    os.system('sudo systemctl restart slurmd.service')
 
 def main():
     import argparse
