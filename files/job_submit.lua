@@ -1,14 +1,35 @@
+--[[
+--	This file is edited by clic. Lines modified by clic are denoted with comments.
+--	Edit at your own risk!
+--]]
+
 function slurm_job_submit(job_desc, part_list, submit_uid)
+--	parts follows syntax {partName = {cpus = X, disk = Y, mem = Z}, ...}
+	parts = {}
+--	START CLIC STUFF
+-- 	END CLIC STUFF
 	if job_desc.partition == nil then
-		local cpus = 1
-		for power = 0,5 do
-			if cpus >= job_desc.min_cpus then
-				job_desc.partition = cpus .. "cpu"
-				slurm.log_info("Assigning to partition: %s.", job_desc.partition)
-				break
+		bestPart = nil
+		bestAttr = nil
+		for part,attr in pairs(parts) do
+			if attr.cpus >= job_desc.pn_min_cpus and attr.disk >= job_desc.pn_min_tmp_disk and attr.mem >= job_desc.pn_min_memory then
+				if bestPart == nil then
+					bestPart = part
+					bestAttr = attr
+				else
+					for attribute in {'cpus', 'mem', 'disk'} do
+						if attr.attribute < bestAttr.attribute then
+							bestPart = part
+							bestAttr = attr
+							break
+						else if attr.attribute > bestAttr.attribute then
+							break -- If they're equal, move to the next attribute
+						end
+					end
+				end
 			end
-			cpus = cpus * 2
 		end
+		job_desc.partition = bestPart
 	end
 	return slurm.SUCCESS
 end

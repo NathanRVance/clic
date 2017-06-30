@@ -9,6 +9,7 @@ from clic import initnode
 from clic import nodesup
 from clic import synchosts
 import configparser
+import fileinput
 
 config = configparser.ConfigParser()
 config.read('/etc/clic/clic.conf')
@@ -23,7 +24,13 @@ user = settings['user']
 namescheme = settings['namescheme']
 logfile = settings['logfile']
 isCloud = settings.getboolean('cloudHeadnode')
-validName = re.compile('^' + namescheme + '-\d+cpu-\d+$')
+validName = re.compile('^' + namescheme + '-\w+-\d+$')
+
+# Node settings
+settings = config['Nodes']
+cpuValues = settings['cpus'].split(',')
+diskValues = settings['disksize'].split(',')
+memValues = settings['memory'].split(',')
 
 def parseInt(value):
     try:
@@ -31,12 +38,30 @@ def parseInt(value):
     except:
         return 0
 
-class Node:
-    def __init__(self, cpus, num):
+class Partition:
+    def __init__(self, cpus, disk, mem):
         self.cpus = cpus
-        self.partition = '{0}cpu'.format(cpus)
+        self.disk = disk
+        self.mem = mem
+        self.realMem = cpus
+        if mem == 'standard':
+            self.realMem *= 3.75
+        elif mem == 'highmem':
+            self.realMem *= 6.5
+        elif mem == 'highcpu':
+            self.realMem *= .9
+        self.name = '{0}cpu{1}disk{2}'.format(cpus, disk, mem)
+
+partitions = [Partition(cpus, disk, mem) for cpus in cpuValues for disk in diskValues for mem in memValues]
+
+def getPartition(name):
+    return next((partition for partition in partitions if partition.name == name), None)
+
+class Node:
+    def __init__(self, partition, num):
+        self.partition = partition
         self.num = num
-        self.name = '{0}-{1}-{2}'.format(namescheme, self.partition, num)
+        self.name = '{0}-{1}-{2}'.format(namescheme, partition.name, num)
         self.state = ''
         self.timeEntered = time.time()
     def __str__(self):
@@ -48,7 +73,10 @@ class Node:
     def timeInState(self):
         return time.time() - self.timeEntered
 
-nodes = [Node(cpus, num) for num in range(maxNodes) for cpus in [1, 2, 4, 8, 16, 32]]
+nodes = []
+
+def getNode(nodeName):
+    return next((node for node in nodes if node.name == nodeName), None)
 
 class Job:
     def __init__(self, num):
@@ -57,10 +85,7 @@ class Job:
     def timeWaiting(self):
         return time.time() - self.time
 
-jobs = {'{0}cpu'.format(cpus) : [] for cpus in [1, 2, 4, 8, 16, 32]}
-
-def getNode(nodeName):
-    return next(node for node in nodes if node.name == nodeName)
+jobs = {partition : [] for partition in partitions}
 
 def log(message):
     message = message.strip() + '\n'
@@ -71,16 +96,53 @@ def log(message):
 def getNodesInState(state):
     return {node for node in nodes if node.state == state}
 
+def getFreeNode(partition):
+    freeNum = 0
+    for node in nodes:
+        if node.partition == partition:
+            if node.num >= freeNum:
+                freeNum = node.num + 1
+            if node.state == '':
+                return node
+    # Time to make it
+    if freeNum < maxNodes:
+        node = Node(partition, freeNum)
+        nodes.append(node)
+        return node
+    else:
+        log('ERROR: Cannot make more than {0} nodes for partition {1}'.format(maxNodes, partition.name))
+        return None
+
+def addToSlurmConf(node):
+    wantedLine = re.compile('={0}-{1}-\[0-\d+\] .*$'.format(namescheme, node.partition.name))
+    with fileinput.input('/etc/slurm/slurm.conf', inplace=True) as f:
+        for line in f:
+            if wantedLine.search(line) and int(wantedLine.search(line).group(0)) < node.num:
+                line = re.sub('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name), node.num, line)
+            print(line, end='')
+    subprocess.Popen(['sudo', 'systemctl', 'reload', 'slurmctld'])
+
 def create(numToCreate, partition):
     if numToCreate < 0:
         return
-    existingDisks = {getNode(nodeName) for nodeName in os.popen('gcloud compute disks list | tail -n+2 | awk \'{print $1}\'').read().split() if validName.search(nodeName)}
-    freeNodes = [node for node in getNodesInState('') - existingDisks if node.partition == partition]
-    for node in sorted(freeNodes, key=lambda node: node.num)[0:int(numToCreate)]:
+    existingDisks = {nodeName for nodeName in os.popen('gcloud compute disks list | tail -n+2 | awk \'{print $1}\'').read().split() if validName.search(nodeName)}
+    for _ in range(numToCreate):
+        # Get a valid node
+        while True:
+            node = getFreeNode(partition)
+            if node == None:
+                return
+            elif node.name in existingDisks:
+                node.setState('D')
+                log('ERROR: Disk for {0} exists, but shouldn\'t! Deleting...'.format(node.name))
+                subprocess.Popen('echo Y | gcloud compute disks delete {0}'.format(node.name), shell=True)
+            else:
+                break
         node.setState('C')
         subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Creating"'])
         log('Creating {}'.format(node.name))
-        subprocess.Popen('gcloud compute disks create {0} --size 10 --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-standard-{2}" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {3}'.format(node.name, namescheme, node.cpus, logfile), shell=True)
+        subprocess.Popen('gcloud compute disks create {0} --size {3} --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-{4}-{2}" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {5}'.format(node.name, namescheme, partition.cpus, partition.disk, partition.mem, logfile), shell=True)
+        addToSlurmConf(node)
 
 def delete(numToDelete, partition):
     idleNodes = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep "idle" | awk \'{print $2}\'').read().split() if validName.search(nodeName)]
@@ -101,9 +163,9 @@ def mainLoop():
         if not isCloud:
             synchosts.addAll()
         # Start with some book keeping
-        slurmRunning = {getNode(nodeName) for nodeName in os.popen('sinfo -h -N -r -o %N').read().split() if validName.search(nodeName)}
-        cloudRunning = {getNode(nodeName) for nodeName in nodesup.responds(user, validName) if validName.search(nodeName)}
-        cloudAll = {getNode(nodeName) for nodeName in nodesup.all(False) if validName.search(nodeName)}
+        slurmRunning = {getNode(nodeName) for nodeName in os.popen('sinfo -h -N -r -o %N').read().split() if validName.search(nodeName)} - {None}
+        cloudRunning = {getNode(nodeName) for nodeName in nodesup.responds(user, validName) if validName.search(nodeName)} - {None}
+        cloudAll = {getNode(nodeName) for nodeName in nodesup.all(False) if validName.search(nodeName)} - {None}
         
         # Nodes that were creating and now are running:
         names = []
@@ -159,7 +221,7 @@ def mainLoop():
         # Book keeping for jobs. Modify existing structure rather than replacing because jobs keep track of wait time.
         # jobs = {partition : [job, ...], ...}
         # qJobs = [[jobNum, partition], ...]
-        qJobs = [job.split() for job in os.popen('squeue -h -t pd -o "%A %P"').read().strip().split('\n') if len(job.split()) == 2]
+        qJobs = [[job.split()[0], getPartition(job.split()[1])] for job in os.popen('squeue -h -t pd -o "%A %P"').read().strip().split('\n') if len(job.split()) == 2]
         # Delete dequeued jobs
         for partition in jobs:
             for job in jobs[partition]:
@@ -176,12 +238,14 @@ def mainLoop():
             if qJob[1] in jobs and qJob[0] not in [job.num for job in jobs[qJob[1]]] and int(qJob[0]) > sampleNum:
                 jobs[qJob[1]].append(Job(qJob[0]))
 
-        # idle = {partition : numIdle, ...}
         sinfo = ['']
         while sinfo == ['']:
             sinfo = os.popen('sinfo -h -r -o "%A %P"').read().strip().split('\n')
-        idle = {partInfo.split()[1].strip('*') : parseInt(partInfo.split()[0].split('/')[1]) for partInfo in sinfo}
+        # idle = {partition : numIdle, ...}
+        idle = {getPartition(partInfo.split()[1].strip('*')) : parseInt(partInfo.split()[0].split('/')[1]) for partInfo in sinfo}
         for partition in jobs:
+            if not partition in idle:
+                continue # skip for now, catch it next time around
             # Add nodes
             creating = {node for node in getNodesInState('C') if node.partition == partition}
             running = {node for node in getNodesInState('R') if node.partition == partition}
@@ -219,6 +283,34 @@ def main():
     if os.popen('hostname -s').read().strip() == namescheme or not isCloud:
         # This is the head node
         log('Starting clic as a head node')
+        # Initialize /etc/slurm/slurm.conf
+        data = ''
+        with open('/etc/slurm/slurm.conf') as f:
+            data = f.read()
+        for partition in partitions:
+            if not re.search('={0}-{1}-\[0-\d+\] .*$'.format(namescheme, partition.name)):
+                # RealMemory, TmpDisk in mb
+                data += 'NodeName={0}-{1}-[0-0] CPUs={2} TmpDisk={3} RealMemory={4} State=CLOUD\n'.format(namescheme, partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024)
+                data += 'PartitionName={1} Nodes={0}-{1}-[0-0] MaxTime=UNLIMITED State=UP\n'.format(namescheme, partition.name)
+        with open('/etc/slurm/slurm.conf', 'w') as f:
+            f.write(data)
+
+        # Initialize /etc/slurm/job_submit.lua
+        data = []
+        with open('/etc/slurm/job_submit.lua') as f:
+            data = f.readlines()
+        start = 0
+        for start in range(len(data)):
+            if re.search('START CLIC STUFF', data[start]):
+                start += 1
+                while not re.search('END CLIC STUFF', data[start]):
+                    del data[start]
+                break
+        for partition in partitions:
+            data.insert(start, '\tparts.{0} = {{ cpus = {1}, disk = {2}, mem = {3} }}'.format(partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024))
+        with open('/etc/slurm/job_submit.lua', 'w') as f:
+            f.writelines(data)
+
         log('Starting slurmctld.service')
         subprocess.Popen(['systemctl', 'restart', 'slurmctld.service']).wait()
         if isCloud:
