@@ -40,19 +40,18 @@ def parseInt(value):
 
 class Partition:
     def __init__(self, cpus, disk, mem):
-        self.cpus = cpus
-        self.disk = disk
+        self.cpus = int(cpus)
+        self.disk = int(disk)
         self.mem = mem
-        self.realMem = cpus
         if mem == 'standard':
-            self.realMem *= 3.75
+            self.realMem = int(float(self.cpus) * 3.75)
         elif mem == 'highmem':
-            self.realMem *= 6.5
+            self.realMem = int(float(self.cpus) * 6.5)
         elif mem == 'highcpu':
-            self.realMem *= .9
+            self.realMem = int(float(self.cpus) * .9)
         self.name = '{0}cpu{1}disk{2}'.format(cpus, disk, mem)
 
-partitions = [Partition(cpus, disk, mem) for cpus in cpuValues for disk in diskValues for mem in memValues]
+partitions = [Partition(cpus, disk, mem) for cpus in cpuValues for disk in diskValues for mem in memValues if not (cpus == '1' and mem == 'highmem') and not (cpus == '1' and mem == 'highcpu')]
 
 def getPartition(name):
     return next((partition for partition in partitions if partition.name == name), None)
@@ -288,7 +287,7 @@ def main():
         with open('/etc/slurm/slurm.conf') as f:
             data = f.read()
         for partition in partitions:
-            if not re.search('={0}-{1}-\[0-\d+\] .*$'.format(namescheme, partition.name)):
+            if not re.search('={0}-{1}-\[0-\d+\] .*$'.format(namescheme, partition.name), data):
                 # RealMemory, TmpDisk in mb
                 data += 'NodeName={0}-{1}-[0-0] CPUs={2} TmpDisk={3} RealMemory={4} State=CLOUD\n'.format(namescheme, partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024)
                 data += 'PartitionName={1} Nodes={0}-{1}-[0-0] MaxTime=UNLIMITED State=UP\n'.format(namescheme, partition.name)
@@ -307,7 +306,7 @@ def main():
                     del data[start]
                 break
         for partition in partitions:
-            data.insert(start, '\tparts.{0} = {{ cpus = {1}, disk = {2}, mem = {3} }}'.format(partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024))
+            data.insert(start, '\tparts["{0}"] = {{ cpus = {1}, disk = {2}, mem = {3} }}\n'.format(partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024))
         with open('/etc/slurm/job_submit.lua', 'w') as f:
             f.writelines(data)
 

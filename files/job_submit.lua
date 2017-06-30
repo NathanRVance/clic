@@ -22,7 +22,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 							bestPart = part
 							bestAttr = attr
 							break
-						else if attr.attribute > bestAttr.attribute then
+						elseif attr.attribute > bestAttr.attribute then
 							break -- If they're equal, move to the next attribute
 						end
 					end
