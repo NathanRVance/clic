@@ -171,7 +171,7 @@ def mainLoop():
         for node in cloudRunning:
             if node.state == 'C':
                 node.setState('R')
-                initnode.init(user, node.name, isCloud)
+                initnode.init(user, node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
                 names.append(node.name)
                 log('Node {} came up'.format(node.name))
         if len(names) > 0:

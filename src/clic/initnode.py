@@ -4,7 +4,7 @@ from pathlib import Path
 from pwd import getpwnam
 from clic import pssh
 
-def init(user, host, skipsync):
+def init(user, host, skipsync, cpus, disk, mem):
     # Sync UIDs and GIDs
     for path in Path('/home').iterdir():
         if path.is_dir():
@@ -20,10 +20,13 @@ def init(user, host, skipsync):
     pssh.run(user, user, host, 'sudo clic-mount {0}@{1} &'.format(user, hostname))
     
     # Copy executables in /etc/clic/ to node and run in shell expansion order
-    for path in Path('/etc/clic').iterdir():
+    paths = [path for path in Path('/etc/clic').iterdir()]
+    paths.sort()
+    for path in paths:
         if path.is_file() and os.access(str(path), os.X_OK):
-            pssh.copy(user, user, host, str(path), str(path))
-            pssh.run(user, user, host, 'sudo {0}'.format(str(path)))
+            dest = '/tmp/{0}'.format(path.parts[-1])
+            pssh.copy(user, user, host, str(path), dest)
+            pssh.run(user, user, host, 'sudo {0} {1} {2} {3}'.format(dest, cpus, disk, mem))
 
 
 def main():
@@ -36,4 +39,4 @@ def main():
     if not re.search('^\w+@\w+$', args.userhost[0]):
         parser.error('incorrect formatting: ' + args.userhost[0])
     [user, host] = args.userhost[0].split('@')
-    init(user, host, False)
+    init(user, host, False, 0, 0, 0)

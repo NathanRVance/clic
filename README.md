@@ -25,6 +25,21 @@ where
 
 4. Use sbatch to submit jobs. It takes about 2 minutes for CLIC to create cloud instances to handle jobs.
 
+## Configuration
+### clic.conf
+
+The main configuration file is /etc/clic/clic.conf. Likely, the only part of this file that must be edited is the [Nodes] section, which describes the charictaristics of cloud nodes created by CLIC. There are 3 points of configuration for cloud nodes: cpus, disksize, and memory. Each of these fields allows for comma separated values, and SLURM partitions will be created by CLIC for every valid combination of values. It is important that nodes with different charictaristics are grouped into partitions so that SLURM can't underutilize nodes that should be deleted.
+
+Partitions are named X-cpu-Y-disk-memtype (dashes inserted for clarity) where X is the number of cpus and Y is the size of the disk in GB. To submit a job for a particular machine architecture, you may specify the corresponding partition, eg:  
+&nbsp;&nbsp;`sbatch --partition=4cpu100diskstandard job.sh`  
+Equivalently, specify individual node charictaristsics:  
+&nbsp;&nbsp;`sbatch --mincpus=4 --tmp=102400 --mem=15360 job.sh`  
+The Lua script /etc/slurm/job\_submit.lua places the job in the correct partition if none is specified.
+
+### Init scripts
+
+When cloud nodes are created, all executable files in /etc/clic/ are copied to the node and run with command line arguments cpus, disksize, and memory, matching the values recorded in the partition name. See /etc/clic/example.sh for an example.
+
 ## Behind the Scenes
 
 CLIC is a daemon that monitors the SLURM queue. If CLIC detects that the cluster is overwhelmed by jobs, it creates new instances to handle these jobs. When the new instances come online, CLIC notifies SLURM that they are able to recieve jobs, and SLURM incorporates them into the cluster. If CLIC detects that the cluster is underutilized, it notifies SLURM that it is removing some of the idle instances, then deletes those intances from the cloud.
