@@ -141,7 +141,6 @@ def create(numToCreate, partition):
         subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Creating"'])
         log('Creating {}'.format(node.name))
         subprocess.Popen('gcloud compute disks create {0} --size {3} --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-{4}-{2}" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {5}'.format(node.name, namescheme, partition.cpus, partition.disk, partition.mem, logfile), shell=True)
-        addToSlurmConf(node)
 
 def delete(numToDelete, partition):
     idleNodes = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep "idle" | awk \'{print $2}\'').read().split() if validName.search(nodeName)]
@@ -176,11 +175,13 @@ def mainLoop():
                 log('Node {} came up'.format(node.name))
         if len(names) > 0:
             time.sleep(5)
+            log('WARNING: Restarting slurmctld')
+            subprocess.Popen(['systemctl', 'stop', 'slurmctld']).wait()
+            for name in names:
+                addToSlurmConf(node)
+            subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
             for name in names:
                 subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
-            # There's a chance they came up with different IPs. Restart slurmctld to avoid errors.
-            log('WARNING: Restarting slurmctld')
-            subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
             continue
         
         # Nodes that were deleting and now are gone:
