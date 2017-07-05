@@ -48,5 +48,3 @@ When cloud nodes are created, all executable files in /etc/clic/ are copied to t
 ## Behind the Scenes
 
 CLIC is a daemon that monitors the SLURM queue. If CLIC detects that the cluster is overwhelmed by jobs, it creates new instances to handle these jobs. When the new instances come online, CLIC notifies SLURM that they are able to recieve jobs, and SLURM incorporates them into the cluster. If CLIC detects that the cluster is underutilized, it notifies SLURM that it is removing some of the idle instances, then deletes those intances from the cloud.
-
-CLIC supports utilizing multiple cpus in cloud nodes. To do so, SLURM is configured with a partition for each number of cpus (1, 2, 4, 8, 16, and 32). This is preferable to dumping nodes of a variety of architectures into a single partition because then CLIC would have less control over how SLURM utilizes cloud resources. For example, SLURM could underutilize a multi-core machine for a long period of time by running a single-core job on it, rendering CLIC unable to free up that resource. A Lua script (/etc/slurm/job\_submit.lua) automatically assigns jobs to the correct partition based on requested cpus.

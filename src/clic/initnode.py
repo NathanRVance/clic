@@ -9,9 +9,12 @@ def init(user, host, skipsync, cpus, disk, mem):
     for path in Path('/home').iterdir():
         if path.is_dir():
             localUser = path.parts[-1]
-            uid = getpwnam(localUser).pw_uid
-            gid = getpwnam(localUser).pw_gid
-            pssh.run(user, user, host, 'nohup sudo su - -c \'usermod -o -u {1} {0}; groupmod -o -g {2} {0}\' &> /dev/null &'.format(localUser, uid, gid))
+            try:
+                uid = getpwnam(localUser).pw_uid
+                gid = getpwnam(localUser).pw_gid
+                pssh.run(user, user, host, 'nohup sudo su - -c \'usermod -o -u {1} {0}; groupmod -o -g {2} {0}\' &> /dev/null &'.format(localUser, uid, gid))
+            except KeyError:
+                continue
     
     hostname = os.popen('hostname -s').read().strip()
     if not skipsync:

@@ -174,12 +174,12 @@ def mainLoop():
                 names.append(node.name)
                 log('Node {} came up'.format(node.name))
         if len(names) > 0:
-            time.sleep(5)
             log('WARNING: Restarting slurmctld')
             subprocess.Popen(['systemctl', 'stop', 'slurmctld']).wait()
             for name in names:
                 addToSlurmConf(node)
             subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
+            time.sleep(5)
             for name in names:
                 subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
             continue

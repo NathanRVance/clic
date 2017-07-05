@@ -11,8 +11,21 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 	if job_desc.partition == nil then
 		bestPart = nil
 		bestAttr = nil
+		local reqCpus = job_desc.pn_min_cpus
+		if reqCpus > 1000 then
+			reqCpus = 0
+		end
+		local reqMem = job_desc.pn_min_memory
+		if reqMem > 1000000 then
+			reqMem = 0
+		end
+		local reqDisk = job_desc.pn_min_tmp_disk
+		if reqDisk > 1000000 then
+			reqDisk = 0
+		end
+		slurm.log_user("cpus: %s, mem: %s, disk: %s\n", reqCpus, reqMem, reqDisk)
 		for part,attr in pairs(parts) do
-			if attr.cpus >= job_desc.pn_min_cpus and attr.disk >= job_desc.pn_min_tmp_disk and attr.mem >= job_desc.pn_min_memory then
+			if attr.cpus >= reqCpus and attr.mem >= reqMem and attr.disk >= reqDisk then
 				if bestPart == nil then
 					bestPart = part
 					bestAttr = attr
