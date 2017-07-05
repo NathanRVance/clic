@@ -31,8 +31,8 @@ where
 The main configuration file is /etc/clic/clic.conf. Normally, the only part of this file that must be edited is the [Nodes] section, which describes the charictaristics of cloud nodes created by CLIC. There are 3 points of configuration for cloud nodes:
   * cpus
   * disksize (GB)
-  * memory (standard, highmem, highcpu)
-Each of these fields allows for comma separated values, and SLURM partitions will be created by CLIC for every valid combination of values. Things are done this way because CLIC must be able to delete nodes in order to scale the cluster efficiently. If SLURM was allowed to run jobs on overprovisioned nodes, then CLIC wouldn't be able to delete them.
+  * memory (standard, highmem, highcpu)  
+Each of these fields allows for comma separated values, and SLURM partitions will be created by CLIC for every valid combination of values. Things are done this way to make it impossible for SLURM to run jobs on overprovisioned nodes, which would make CLIC unable to delete them when scaling the cluster.
 
 Partitions are named X-cpu-Y-disk-memtype (dashes inserted for clarity) where X is the number of cpus and Y is the size of the disk in GB. To submit a job for a particular machine architecture, you may specify the corresponding partition, eg:  
 &nbsp;&nbsp;`sbatch --partition=4cpu100diskstandard job.sh`  

@@ -117,7 +117,7 @@ def addToSlurmConf(node):
     with fileinput.input('/etc/slurm/slurm.conf', inplace=True) as f:
         for line in f:
             if wantedLine.search(line) and int(wantedLine.search(line).group(0)) < node.num:
-                line = re.sub('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name), node.num, line)
+                line = re.sub('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name), str(node.num), line)
             print(line, end='')
     subprocess.Popen(['sudo', 'systemctl', 'reload', 'slurmctld'])
 
