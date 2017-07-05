@@ -18,6 +18,13 @@ def init(user, host, skipsync):
         import ipgetter
         pssh.run(user, user, host, 'sudo clic-synchosts {0}:{1}'.format(hostname, ipgetter.myip()))
     pssh.run(user, user, host, 'sudo clic-mount {0}@{1} &'.format(user, hostname))
+    
+    # Copy executables in /etc/clic/ to node and run in shell expansion order
+    for path in Path('/etc/clic').iterdir():
+        if path.is_file() and os.access(str(path), os.X_OK):
+            pssh.copy(user, user, host, str(path), str(path))
+            pssh.run(user, user, host, 'sudo {0}'.format(str(path)))
+
 
 def main():
     import argparse

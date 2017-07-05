@@ -17,6 +17,12 @@ sudo mkdir /etc/clic/
 echo -e "\n/etc/clic/clic.conf:"
 cat $CLIC_ROOT/files/clic.conf | sed "s/NAMESCHEME/$namescheme/g" | sed "s/CLOUD/$cloud/g" | sed "s/USER/$user/g" | sudo tee /etc/clic/clic.conf
 
+#And a readme
+echo -e "\n/etc/clic/README:"
+echo "
+When clic-initnode is run, either manually or by clic, all executable files in this
+directory are copied to the node being initialized and run in shell expansion order." | sudo tee /etc/clic/README
+
 #Create a service to start the clic daemon
 echo -e "\n/etc/systemd/system/clic.service:"
 path="`which clic`"
