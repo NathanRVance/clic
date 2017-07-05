@@ -21,9 +21,9 @@ cat $CLIC_ROOT/files/clic.conf | sed "s/NAMESCHEME/$namescheme/g" | sed "s/CLOUD
 echo -e "\n/etc/clic/example.sh:"
 echo "#!/bin/bash
 # This script dumps this machine's configuration into a file in /tmp
-echo \"cpus: \$0\" >> /tmp/example.sh.out
-echo \"disksize: \$1\" >> /tmp/example.sh.out
-echo \"memory: \$2\" >> /tmp/example.sh.out" | sudo tee /etc/clic/example.sh
+echo \"cpus: \$1\" >> /tmp/example.sh.out
+echo \"disksize: \$2\" >> /tmp/example.sh.out
+echo \"memory: \$3\" >> /tmp/example.sh.out" | sudo tee /etc/clic/example.sh
 sudo chmod +x /etc/clic/example.sh
 
 #And a readme

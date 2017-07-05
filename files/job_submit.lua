@@ -17,14 +17,15 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 					bestPart = part
 					bestAttr = attr
 				else
-					for attribute in {'cpus', 'mem', 'disk'} do
-						if attr.attribute < bestAttr.attribute then
+					for index,attribute in pairs({'cpus', 'mem', 'disk'}) do
+						if attr[attribute] < bestAttr[attribute] then
 							bestPart = part
 							bestAttr = attr
 							break
-						elseif attr.attribute > bestAttr.attribute then
-							break -- If they're equal, move to the next attribute
+						elseif attr[attribute] > bestAttr[attribute] then
+							break
 						end
+						-- If they're equal, move to the next attribute
 					end
 				end
 			end

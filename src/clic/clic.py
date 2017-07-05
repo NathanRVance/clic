@@ -28,9 +28,9 @@ validName = re.compile('^' + namescheme + '-\w+-\d+$')
 
 # Node settings
 settings = config['Nodes']
-cpuValues = settings['cpus'].split(',')
-diskValues = settings['disksize'].split(',')
-memValues = settings['memory'].split(',')
+cpuValues = settings['cpus'].replace(' ', '').split(',')
+diskValues = settings['disksize'].replace(' ', '').split(',')
+memValues = settings['memory'].replace(' ', '').split(',')
 
 def parseInt(value):
     try:
@@ -113,7 +113,7 @@ def getFreeNode(partition):
         return None
 
 def addToSlurmConf(node):
-    wantedLine = re.compile('={0}-{1}-\[0-\d+\] .*$'.format(namescheme, node.partition.name))
+    wantedLine = re.compile('(?<=={0}-{1}-\[0-)\d+(?=\] .*$)'.format(namescheme, node.partition.name))
     with fileinput.input('/etc/slurm/slurm.conf', inplace=True) as f:
         for line in f:
             if wantedLine.search(line) and int(wantedLine.search(line).group(0)) < node.num:
