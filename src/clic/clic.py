@@ -224,13 +224,19 @@ def mainLoop():
                 if node.errors > 5:
                     # Something is very wrong. Kill it.
                     deleteNode(node)
+                    node.setState('D')
+                    log('Deleting {}'.format(node.name))
+                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="error"'])
+                    subprocess.Popen('echo Y | gcloud compute instances delete {0}'.format(node.name), shell=True)
                 else:
                     # Spam a bunch of stuff to try to bring it back online
                     addToSlurmConf(node)
                     restartSlurmd(node)
                     initnode.init(user, node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
-                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
-                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain'])
+                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume']).wait()
+                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain']).wait()
+                    log('WARNING: Restarting slurmctld')
+                    subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
 
         # Nodes are running but aren't registered:
         for node in getNodesInState('') & cloudRunning:

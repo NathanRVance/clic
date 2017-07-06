@@ -40,6 +40,6 @@ Equivalently, specify individual node charictaristsics:
 &nbsp;&nbsp;`sbatch --mincpus=4 --tmp=102400 --mem=15360 job.sh`  
 The Lua script /etc/slurm/job\_submit.lua places the job in the correct partition if none is specified with the --partition flag.
 
-### Init scripts
+### Initialization scripts
 
 When cloud nodes are created, all executable files in /etc/clic/ are copied to the node and run with command line arguments cpus, disksize, and memory, matching the values embedded in the partition name. See /etc/clic/example.sh for an example.
