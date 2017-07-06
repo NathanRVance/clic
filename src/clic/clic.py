@@ -64,6 +64,7 @@ class Node:
         self.name = '{0}-{1}-{2}'.format(namescheme, partition.name, num)
         self.state = ''
         self.timeEntered = time.time()
+        self.errors = 0
     def __str__(self):
         return self.name
     def setState(self, state):
@@ -121,7 +122,10 @@ def addToSlurmConf(node):
         data = re.sub('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name), str(node.num), data)
         with open('/etc/slurm/slurm.conf', 'w') as f:
             f.write(data)
-        pssh.run(user, user, node.name, 'sudo systemctl restart slurmd.service')
+        restartSlurmd(node)
+
+def restartSlurmd(node):
+    pssh.run(user, user, node.name, 'sudo systemctl restart slurmd.service')
 
 def create(numToCreate, partition):
     if numToCreate < 0:
@@ -140,6 +144,7 @@ def create(numToCreate, partition):
             else:
                 break
         node.setState('C')
+        node.errors = 0
         subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Creating"'])
         log('Creating {}'.format(node.name))
         subprocess.Popen('gcloud compute disks create {0} --size {3} --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-{4}-{2}" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {5}'.format(node.name, namescheme, partition.cpus, partition.disk, partition.mem, logfile), shell=True)
@@ -154,11 +159,14 @@ def delete(numToDelete, partition):
         if numToDelete <= 0:
             return
         if node.state == 'R' and node.timeInState() >= minRuntime:
-            node.setState('D')
-            log('Deleting {}'.format(node.name))
-            subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
-            subprocess.Popen('while true; do if [ -n "`sinfo -h -N -o "%N %t" | grep "{0} " | awk \'{{print $2}}\' | grep drain`" ]; then echo Y | gcloud compute instances delete {0}; break; fi; sleep 10; done'.format(node.name), shell=True)
+            deleteNode(node)
             numToDelete -= 1
+
+def deleteNode(node):
+        node.setState('D')
+        log('Deleting {}'.format(node.name))
+        subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
+        subprocess.Popen('while true; do if [ -n "`sinfo -h -N -o "%N %t" | grep "{0} " | awk \'{{print $2}}\' | grep drain`" ]; then echo Y | gcloud compute instances delete {0}; break; fi; sleep 10; done'.format(node.name), shell=True)
 
 def mainLoop():
     while True:
@@ -205,14 +213,24 @@ def mainLoop():
         # Error conditions:
         # We think they're up, but the cloud doesn't:
         for node in getNodesInState('R') - cloudAll:
-            #node.setState('')
-            #subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Error"'])
             log('ERROR: Node {} deleted outside of clic!'.format(node.name))
+            deleteNode(node)
         
         # We think they're running, but slurm doesn't:
         for node in getNodesInState('R') - slurmRunning:
             if node.timeInState() > 30:
                 log('ERROR: Node {} is unresponsive!'.format(node.name))
+                node.errors += 1
+                if node.errors > 5:
+                    # Something is very wrong. Kill it.
+                    deleteNode(node)
+                else:
+                    # Spam a bunch of stuff to try to bring it back online
+                    addToSlurmConf(node)
+                    restartSlurmd(node)
+                    initnode.init(user, node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
+                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
+                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain'])
 
         # Nodes are running but aren't registered:
         for node in getNodesInState('') & cloudRunning:
