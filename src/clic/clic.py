@@ -322,7 +322,7 @@ def main():
         for partition in partitions:
             if not re.search('={0}-{1}-\[0-\d+\] '.format(namescheme, partition.name), data):
                 # RealMemory, TmpDisk in mb
-                data += 'NodeName={0}-{1}-[0-0] CPUs={2} TmpDisk={3} RealMemory={4} State=CLOUD\n'.format(namescheme, partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024)
+                data += 'NodeName={0}-{1}-[0-0] CPUs={2} TmpDisk={3} RealMemory={4} State=UNKNOWN\n'.format(namescheme, partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024)
                 data += 'PartitionName={1} Nodes={0}-{1}-[0-0] MaxTime=UNLIMITED State=UP\n'.format(namescheme, partition.name)
         with open('/etc/slurm/slurm.conf', 'w') as f:
             f.write(data)
