@@ -186,6 +186,7 @@ def mainLoop():
             time.sleep(5)
             for name in names:
                 subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
+                subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=undrain'])
             continue
         
         # Nodes that were deleting and now are gone:
