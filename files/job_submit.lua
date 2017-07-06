@@ -1,6 +1,5 @@
 --[[
 --	This file is edited by clic. Lines modified by clic are denoted with comments.
---	Edit at your own risk!
 --]]
 
 function slurm_job_submit(job_desc, part_list, submit_uid)
@@ -9,8 +8,8 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 --	START CLIC STUFF
 -- 	END CLIC STUFF
 	if job_desc.partition == nil then
-		bestPart = nil
-		bestAttr = nil
+		local bestPart = nil
+		local bestAttr = nil
 		local reqCpus = job_desc.pn_min_cpus
 		if reqCpus > 1000 then
 			reqCpus = 0

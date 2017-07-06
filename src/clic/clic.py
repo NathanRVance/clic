@@ -197,7 +197,7 @@ def mainLoop():
             subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
             continue
         
-        # Error conditions (log but don't do anything about it):
+        # Error conditions:
         # We think they're up, but the cloud doesn't:
         for node in getNodesInState('R') - cloudAll:
             #node.setState('')
@@ -212,6 +212,9 @@ def mainLoop():
         # Nodes are running but aren't registered:
         for node in getNodesInState('') & cloudRunning:
             log('ERROR: Encountered unregistered node {}!'.format(node.name))
+            node.setState('')
+            if not node in slurmRunning:
+                subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
 
         # Nodes that are taking way too long to boot:
         for node in getNodesInState('C'):
