@@ -113,7 +113,7 @@ def getFreeNode(partition):
         return None
 
 def addToSlurmConf(node):
-    wantedLine = re.compile('(?<=={0}-{1}-\[0-)\d+(?=\] .*$)'.format(namescheme, node.partition.name))
+    wantedLine = re.compile('(?<=={0}-{1}-\[0-)\d+(?=\] )'.format(namescheme, node.partition.name))
     with fileinput.input('/etc/slurm/slurm.conf', inplace=True) as f:
         for line in f:
             if wantedLine.search(line) and int(wantedLine.search(line).group(0)) < node.num:
@@ -291,7 +291,7 @@ def main():
         with open('/etc/slurm/slurm.conf') as f:
             data = f.read()
         for partition in partitions:
-            if not re.search('={0}-{1}-\[0-\d+\] .*$'.format(namescheme, partition.name), data):
+            if not re.search('={0}-{1}-\[0-\d+\] '.format(namescheme, partition.name), data):
                 # RealMemory, TmpDisk in mb
                 data += 'NodeName={0}-{1}-[0-0] CPUs={2} TmpDisk={3} RealMemory={4} State=CLOUD\n'.format(namescheme, partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024)
                 data += 'PartitionName={1} Nodes={0}-{1}-[0-0] MaxTime=UNLIMITED State=UP\n'.format(namescheme, partition.name)

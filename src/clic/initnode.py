@@ -38,8 +38,5 @@ def main():
     parser = argparse.ArgumentParser(description='Intitialize a node for use with clic by configuring its /etc/hosts and nfs. This script is run from the head node.')
     parser.add_argument('userhost', metavar='USER@HOST', nargs=1, help='passwordless ssh exists both ways between USER@localhost and USER@HOST')
     args = parser.parse_args()
-    # Error checking
-    if not re.search('^\w+@\w+$', args.userhost[0]):
-        parser.error('incorrect formatting: ' + args.userhost[0])
     [user, host] = args.userhost[0].split('@')
     init(user, host, False, 0, 0, 0)
