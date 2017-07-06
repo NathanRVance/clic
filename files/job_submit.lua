@@ -42,7 +42,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 				end
 			end
 		end
-		if bestPart != nil then
+		if bestPart then
 			job_desc.partition = bestPart
 		end
 	end

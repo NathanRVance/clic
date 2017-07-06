@@ -96,20 +96,19 @@ submit() {
 }
 
 record() {
-	minRunItr=5
+	submitPID=$1
 	while :; do
-		let "minRunItr -= 1"
 	        rCount=`squeue -h -t r,cg,cf -o %A | wc -l`
 	        qCount=`squeue -h -t pd -o %A | wc -l`
 	        nodesUp=`gcloud compute instances list | tail -n+3 | wc -l`
 	        curTime=$(expr $(uptime) - $startTime)
 	        echo "$curTime $qCount $rCount $nodesUp" >> out
 		sleep 10
-	        if [ $qCount -eq 0 ] && [ $rCount -eq 0 ] && [ $nodesUp -eq 0 ] && [ $minRunItr -le 0 ]; then
+	        if ! `kill -0 $submitPID` && [ $qCount -eq 0 ] && [ $rCount -eq 0 ] && [ $nodesUp -eq 0 ]; then
 	                break
 	        fi
 	done
 }
 
 submit &
-record &
+record $! &
