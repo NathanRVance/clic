@@ -4,8 +4,8 @@ export CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 usage() {
         echo "Usage:"
-	echo "-u --user <name>         set up user account <name> on cloud computers for use with clic"
 	echo "-n --namescheme <name>   use <name> as the base name for cloud instances"
+	echo "-u --user <name>         set up user account <name> on cloud computers for use with clic"
 	echo "-c --cloud               installing to a cloud computer"
 	echo "-s                       scripted, don't ask for confirmation"
 	echo "--skip_slurm             don't install slurm on this machine"
@@ -59,14 +59,18 @@ while true; do
         esac
 done
 
-if [ "$script" == false ]; then
+if ! $script && [ "`hostname`" == "$namescheme" ] && [ -n "`curl -s 'http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip' -H 'X-Google-Metadata-Request: True'`" ]; then
+	# A bit of a hack, but this api request only returns a non-empty string if run from within the cloud
+	cloud=true
+fi
+
+if ! $script; then
 	echo -n "Installing clic using "
-	if [ "$cloud" == false ]; then
-		echo -n "the google cloud instance named $namescheme as the basis for all compute nodes, and the user account $user on $namescheme for ssh communication. The instance $namescheme must be currently running, already have any desired computational software installed to it, and the "
+	if $cloud; then
+		echo -n "this cloud instance ($namescheme) as the basis for both the head and compute nodes."
 	else
-		echo -n "this cloud instance ($namescheme) as the basis for both the head and compute nodes, and the user account $user on this instance for ssh communication. The "
+		echo -n "the google cloud instance named $namescheme as the basis for all compute nodes. The instance $namescheme must be currently running and already have any desired computational software installed to it."
 	fi
-	echo "cloud account $user must have passwordless sudo permission."
 	echo "Press ENTER to continue, or CTRL-c to exit."
 	read ans
 fi

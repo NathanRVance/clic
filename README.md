@@ -17,9 +17,8 @@ The CLIC daemon monitors the SLURM queue. If CLIC detects that the cluster is ov
 1. Create a GCE instance. The name given this instance will become the base name of the cluster. For example, if you name it NAME, then instances created by CLIC will follow the pattern NAME-PARTITION-ID, where PARTITION is the SLURM partition that the node belongs to, and ID differentiates between nodes in a partition.
 
 2. Execute the `install` script  
-&nbsp;&nbsp;`./install --user USER --namescheme NAME [--cloud]`  
+&nbsp;&nbsp;`./install --namescheme NAME [--cloud]`  
 where
-    * USER is a user on the GCE instance
     * NAME is the hostname of the GCE instance
     * The `--cloud` flag is set if `install` is being run from NAME in GCE
 
