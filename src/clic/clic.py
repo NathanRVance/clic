@@ -113,13 +113,14 @@ def getFreeNode(partition):
         return None
 
 def addToSlurmConf(node):
-    wantedLine = re.compile('(?<=={0}-{1}-\[0-)\d+(?=\] )'.format(namescheme, node.partition.name))
-    with fileinput.input('/etc/slurm/slurm.conf', inplace=True) as f:
-        for line in f:
-            if wantedLine.search(line) and int(wantedLine.search(line).group(0)) < node.num:
-                line = re.sub('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name), str(node.num), line)
-            print(line, end='')
-    subprocess.Popen(['sudo', 'systemctl', 'reload', 'slurmctld'])
+    data = ''
+    with open('/etc/slurm/slurm.conf') as f:
+        data = f.read()
+    if int(re.search('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name), data).group(0)) < node.num:
+        data = re.sub('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name), str(node.num), data)
+        with open('/etc/slurm/slurm.conf', 'w') as f:
+            f.write(data)
+            subprocess.Popen(['sudo', 'systemctl', 'reload', 'slurmctld'])
 
 def create(numToCreate, partition):
     if numToCreate < 0:

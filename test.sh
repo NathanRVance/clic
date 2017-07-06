@@ -20,7 +20,7 @@ execute() {
 	EOF
 	while [ "$numJobs" -gt 0 ]; do
 		let "numJobs -= 1"
-		sbatch -c `rand 1-2` job.sh
+		sbatch job.sh
 	done
 }
 
