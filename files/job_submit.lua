@@ -42,7 +42,9 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 				end
 			end
 		end
-		job_desc.partition = bestPart
+		if bestPart != nil then
+			job_desc.partition = bestPart
+		end
 	end
 	return slurm.SUCCESS
 end

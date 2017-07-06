@@ -59,7 +59,7 @@ while true; do
         esac
 done
 
-if ! $script && [ "`hostname`" == "$namescheme" ] && [ -n "`curl -s 'http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip' -H 'X-Google-Metadata-Request: True'`" ]; then
+if [ "`hostname`" == "$namescheme" ] && [ -n "`curl -s 'http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip' -H 'X-Google-Metadata-Request: True'`" ]; then
 	# A bit of a hack, but this api request only returns a non-empty string if run from within the cloud
 	cloud=true
 fi
@@ -71,7 +71,7 @@ if ! $script; then
 	else
 		echo -n "the google cloud instance named $namescheme as the basis for all compute nodes. The instance $namescheme must be currently running and already have any desired computational software installed to it."
 	fi
-	echo "Press ENTER to continue, or CTRL-c to exit."
+	echo " Press ENTER to continue, or CTRL-c to exit."
 	read ans
 fi
 
