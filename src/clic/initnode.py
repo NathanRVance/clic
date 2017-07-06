@@ -20,7 +20,7 @@ def init(user, host, skipsync, cpus, disk, mem):
     if not skipsync:
         import ipgetter
         pssh.run(user, user, host, 'sudo clic-synchosts {0}:{1}'.format(hostname, ipgetter.myip()))
-    pssh.run(user, user, host, 'sudo clic-mount {0}@{1} &'.format(user, hostname))
+    pssh.run(user, user, host, 'clic-mount {0}@{1} &'.format(user, hostname))
     
     # Copy executables in /etc/clic/ to node and run in shell expansion order
     paths = [path for path in Path('/etc/clic').iterdir()]
