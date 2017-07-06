@@ -170,23 +170,23 @@ def mainLoop():
         cloudAll = {getNode(nodeName) for nodeName in nodesup.all(False) if validName.search(nodeName)} - {None}
         
         # Nodes that were creating and now are running:
-        names = []
+        cameUp = []
         for node in cloudRunning:
             if node.state == 'C':
                 node.setState('R')
                 initnode.init(user, node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
-                names.append(node.name)
+                cameUp.append(node)
                 log('Node {} came up'.format(node.name))
-        if len(names) > 0:
+        if len(cameUp) > 0:
             log('WARNING: Restarting slurmctld')
             subprocess.Popen(['systemctl', 'stop', 'slurmctld']).wait()
-            for name in names:
+            for node in cameUp:
                 addToSlurmConf(node)
             subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
             time.sleep(5)
-            for name in names:
-                subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
-                subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=undrain'])
+            for node in cameUp:
+                subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
+                subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain'])
             continue
         
         # Nodes that were deleting and now are gone:
