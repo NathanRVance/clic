@@ -145,6 +145,8 @@ def create(numToCreate, partition):
         subprocess.Popen('gcloud compute disks create {0} --size {3} --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-{4}-{2}" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {5}'.format(node.name, namescheme, partition.cpus, partition.disk, partition.mem, logfile), shell=True)
 
 def delete(numToDelete, partition):
+    if numToDelete <= 0:
+        return
     idleNodes = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep "idle" | awk \'{print $2}\'').read().split() if validName.search(nodeName)]
     #Narrow by partition
     idleNodes = [node for node in idleNodes if node.partition == partition]
