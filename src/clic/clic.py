@@ -8,6 +8,7 @@ from threading import Thread
 from clic import initnode
 from clic import nodesup
 from clic import synchosts
+from clic import pssh
 import configparser
 import fileinput
 
@@ -120,7 +121,7 @@ def addToSlurmConf(node):
         data = re.sub('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name), str(node.num), data)
         with open('/etc/slurm/slurm.conf', 'w') as f:
             f.write(data)
-            subprocess.Popen(['sudo', 'systemctl', 'reload', 'slurmctld'])
+        pssh.run(user, user, node.name, 'sudo systemctl restart slurmd.service')
 
 def create(numToCreate, partition):
     if numToCreate < 0:
