@@ -228,7 +228,7 @@ def mainLoop():
                     subprocess.Popen('echo Y | gcloud compute instances delete {0}'.format(node.name), shell=True)
 
         # Nodes are running but aren't registered:
-        for node in getNodesInState('') & cloudRunning:
+        for node in cloudRunning - getNodesInState('R') - getNodesInState('D'):
             log('ERROR: Encountered unregistered node {}!'.format(node.name))
             node.setState('R')
             if not node in slurmRunning:
