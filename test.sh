@@ -84,7 +84,7 @@ echo "time jobsQueued jobsRunning nodesUp" >> out
 submit() {
 	while :; do
 		if [ "$CONTINUOUS" -gt 0 ]; then
-			execute `rand $NUMBER` `rand $DURATION`
+			execute `rand $NUMBER` $DURATION
 			let "CONTINUOUS -= 1"
 		else
 			break
