@@ -77,7 +77,7 @@ class Node:
 nodes = []
 
 def getNode(nodeName):
-    return next((node for node in nodes if node.name == nodeName), None)
+    return next((node for node in nodes if node.name == nodeName), Node(Partition(-1, -1, -1), -1))
 
 class Job:
     def __init__(self, num):
@@ -114,6 +114,10 @@ def getFreeNode(partition):
         log('ERROR: Cannot make more than {0} nodes for partition {1}'.format(maxNodes, partition.name))
         return None
 
+def getDeletableNodes(partition):
+    deletable = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep -E "idle|drain" | awk \'{print $2}\'').read().split() if validName.search(nodeName)]
+    return [node for node in deletable if node.partition == partition and node.state == 'R' and node.timeInState() >= minRuntime]
+
 def addToSlurmConf(node):
     data = ''
     with open('/etc/slurm/slurm.conf') as f:
@@ -128,10 +132,8 @@ def restartSlurmd(node):
     pssh.run(user, user, node.name, 'sudo systemctl restart slurmd.service')
 
 def create(numToCreate, partition):
-    if numToCreate < 0:
-        return
     existingDisks = {nodeName for nodeName in os.popen('gcloud compute disks list | tail -n+2 | awk \'{print $1}\'').read().split() if validName.search(nodeName)}
-    for _ in range(numToCreate):
+    while numToCreate > 0:
         # Get a valid node
         while True:
             node = getFreeNode(partition)
@@ -148,19 +150,7 @@ def create(numToCreate, partition):
         subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Creating"'])
         log('Creating {}'.format(node.name))
         subprocess.Popen('gcloud compute disks create {0} --size {3} --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-{4}-{2}" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {5}'.format(node.name, namescheme, partition.cpus, partition.disk, partition.mem, logfile), shell=True)
-
-def delete(numToDelete, partition):
-    if numToDelete <= 0:
-        return
-    idleNodes = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep "idle" | awk \'{print $2}\'').read().split() if validName.search(nodeName)]
-    #Narrow by partition
-    idleNodes = [node for node in idleNodes if node.partition == partition]
-    for node in idleNodes:
-        if numToDelete <= 0:
-            return
-        if node.state == 'R' and node.timeInState() >= minRuntime:
-            deleteNode(node)
-            numToDelete -= 1
+        numToCreate -= 1
 
 def deleteNode(node):
         node.setState('D')
@@ -221,14 +211,7 @@ def mainLoop():
             if node.timeInState() > 30:
                 log('ERROR: Node {} is unresponsive!'.format(node.name))
                 node.errors += 1
-                if node.errors > 5:
-                    # Something is very wrong. Kill it.
-                    deleteNode(node)
-                    node.setState('D')
-                    log('Deleting {}'.format(node.name))
-                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="error"'])
-                    subprocess.Popen('echo Y | gcloud compute instances delete {0}'.format(node.name), shell=True)
-                else:
+                if node.errors < 5:
                     # Spam a bunch of stuff to try to bring it back online
                     addToSlurmConf(node)
                     restartSlurmd(node)
@@ -237,11 +220,17 @@ def mainLoop():
                     subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain']).wait()
                     log('WARNING: Restarting slurmctld')
                     subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
+                else:
+                    # Something is very wrong. Kill it.
+                    node.setState('D')
+                    log('Deleting {}'.format(node.name))
+                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="error"'])
+                    subprocess.Popen('echo Y | gcloud compute instances delete {0}'.format(node.name), shell=True)
 
         # Nodes are running but aren't registered:
         for node in getNodesInState('') & cloudRunning:
             log('ERROR: Encountered unregistered node {}!'.format(node.name))
-            node.setState('')
+            node.setState('R')
             if not node in slurmRunning:
                 subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
 
@@ -263,22 +252,16 @@ def mainLoop():
         # Sometimes, immediately after slurmctld restarts, running jobs are listed as queued. Only queue jobs with a number greater than any other job.
         sampleNum = 0
         for partition in jobs:
-            if len(jobs[partition]) > 0:
-                sampleNum = int(jobs[partition][0].num)
-                break
+            for job in jobs[partition]:
+                if int(job.num) > sampleNum:
+                    sampleNum = int(job.num)
         for qJob in qJobs:
             if qJob[1] in jobs and qJob[0] not in [job.num for job in jobs[qJob[1]]] and int(qJob[0]) > sampleNum:
                 jobs[qJob[1]].append(Job(qJob[0]))
 
-        sinfo = ['']
-        while sinfo == ['']:
-            sinfo = os.popen('sinfo -h -r -o "%A %P"').read().strip().split('\n')
-        # idle = {partition : numIdle, ...}
-        idle = {getPartition(partInfo.split()[1].strip('*')) : parseInt(partInfo.split()[0].split('/')[1]) for partInfo in sinfo}
+        # Create and delete nodes
         for partition in jobs:
-            if not partition in idle:
-                continue # skip for now, catch it next time around
-            # Add nodes
+            deletable = getDeletableNodes(partition)
             creating = {node for node in getNodesInState('C') if node.partition == partition}
             running = {node for node in getNodesInState('R') if node.partition == partition}
             if len(creating) + len(running) == 0 and len(jobs[partition]) > 0:
@@ -290,10 +273,11 @@ def mainLoop():
                     if node.timeInState() < 15:
                         unutilized += 1
                 jobsWaitingTooLong = [job for job in jobs[partition] if job.timeWaiting() > waitTime]
-                create(int((len(jobsWaitingTooLong) + 1) / 2 - len(creating) - idle[partition] - unutilized), partition)
+                create(int((len(jobsWaitingTooLong) + 1) / 2 - len(creating) - len(deletable) - unutilized), partition)
             # Delete nodes
-            if idle[partition] > 0 and len(jobs[partition]) == 0:
-                delete(int((idle[partition] + 1) / 2), partition)
+            if len(deletable) > 0 and len(jobs[partition]) == 0:
+                for node in deletable[0:int((len(deletable) + 1) / 2)]:
+                    deleteNode(node)
 
 class exportNodes(rpyc.Service):
     def on_connect(self):
