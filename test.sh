@@ -10,17 +10,14 @@ rand() {
 }
 
 execute() {
-	numJobs=$1
+	# Both arguments are ranges
+	numJobs=`rand $1`
 	timePerJob=$2
-	cat > job.sh <<-EOF
-	#!/bin/bash
-	echo "Starting"
-	sleep $timePerJob
-	echo "Done"
-	EOF
 	while [ "$numJobs" -gt 0 ]; do
+		sleepTime=`rand $timePerJob`
+		echo -e "#!/bin/bash\necho 'Starting'\nsleep $sleepTime\necho 'Done'" | sbatch
+		echo "# Submitted sleep $sleepTime" >> out
 		let "numJobs -= 1"
-		sbatch job.sh
 	done
 }
 
@@ -80,7 +77,7 @@ while true; do
 done
 
 startTime=`uptime`
-echo "# Submits $NUMBER $DURATION second jobs every 10 seconds for $CONTINUOUS iterations" > out
+echo "# Submits $NUMBER $DURATION second jobs every $WAIT seconds for $CONTINUOUS iterations" > out
 echo "time jobsQueued jobsRunning nodesUp" >> out
 
 submit() {
