@@ -122,13 +122,22 @@ def getDeletableNodes(partition):
 
 def addToSlurmConf(node):
     data = ''
+    pattern = re.compile('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name))
     with open('/etc/slurm/slurm.conf') as f:
         data = f.read()
-    if int(re.search('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name), data).group(0)) < node.num:
-        data = re.sub('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name), str(node.num), data)
+    if int(pattern.search(data).group(0)) < node.num:
+        data = pattern.sub(str(node.num), data)
         with open('/etc/slurm/slurm.conf', 'w') as f:
             f.write(data)
         restartSlurmd(node)
+
+def restartSlurmctld():
+    log('WARNING: Restarting slurmctld')
+    subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
+    time.sleep(5)
+    for node in getNodesInState('R'):
+        subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
+        subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain'])
 
 def restartSlurmd(node):
     pssh.run(user, user, node.name, 'sudo systemctl restart slurmd.service')
@@ -178,15 +187,9 @@ def mainLoop():
                 cameUp.append(node)
                 log('Node {} came up'.format(node.name))
         if len(cameUp) > 0:
-            log('WARNING: Restarting slurmctld')
-            subprocess.Popen(['systemctl', 'stop', 'slurmctld']).wait()
             for node in cameUp:
                 addToSlurmConf(node)
-            subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
-            time.sleep(5)
-            for node in cameUp:
-                subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
-                subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain'])
+            restartSlurmctld()
             continue
         
         # Nodes that were deleting and now are gone:
@@ -198,8 +201,7 @@ def mainLoop():
             log('Node {} went down'.format(node.name))
         if nodesWentDown:
             # There's a chance they'll come up later with different IPs. Restart slurmctld to avoid errors.
-            log('WARNING: Restarting slurmctld')
-            subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
+            restartSlurmctld()
             continue
         
         # Error conditions:
@@ -216,12 +218,9 @@ def mainLoop():
                 if node.errors < 5:
                     # Spam a bunch of stuff to try to bring it back online
                     addToSlurmConf(node)
-                    restartSlurmd(node)
                     initnode.init(user, node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
-                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume']).wait()
-                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain']).wait()
-                    log('WARNING: Restarting slurmctld')
-                    subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
+                    restartSlurmd(node)
+                    restartSlurmctld()
                 else:
                     # Something is very wrong. Kill it.
                     node.setState('D')
