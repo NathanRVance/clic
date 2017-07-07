@@ -271,7 +271,7 @@ def mainLoop():
                 # SLURM may not have had the chance to utilize some "running" nodes
                 unutilized = 0
                 for node in running:
-                    if node.timeInState() < 15:
+                    if node.timeInState() < 30:
                         unutilized += 1
                 jobsWaitingTooLong = [job for job in jobs[partition] if job.timeWaiting() > waitTime]
                 create(int((len(jobsWaitingTooLong) + 1) / 2 - len(creating) - len(deletable) - unutilized), partition)
