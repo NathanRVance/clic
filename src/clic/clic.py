@@ -18,7 +18,6 @@ settings = config['Daemon']
 
 # Constants
 waitTime = settings.getint('waitTime')
-maxNodes = settings.getint('maxNodes')
 minRuntime = settings.getint('minRuntime')
 
 user = settings['user']
@@ -77,7 +76,14 @@ class Node:
 nodes = []
 
 def getNode(nodeName):
-    return next((node for node in nodes if node.name == nodeName), Node(Partition(-1, -1, -1), -1))
+    node = next((node for node in nodes if node.name == nodeName), None)
+    if not node == None:
+        return node
+    partition = getPartition(re.search('(?<=-)[^-]+(?=-\d+$)', nodeName).group(0))
+    num = int(re.search('(?<=-)\d+$', nodeName).group(0))
+    node = Node(partition, num)
+    nodes.append(node)
+    return node
 
 class Job:
     def __init__(self, num):
@@ -106,13 +112,9 @@ def getFreeNode(partition):
             if node.state == '':
                 return node
     # Time to make it
-    if freeNum < maxNodes:
-        node = Node(partition, freeNum)
-        nodes.append(node)
-        return node
-    else:
-        log('ERROR: Cannot make more than {0} nodes for partition {1}'.format(maxNodes, partition.name))
-        return None
+    node = Node(partition, freeNum)
+    nodes.append(node)
+    return node
 
 def getDeletableNodes(partition):
     deletable = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep -E "idle|drain" | awk \'{print $2}\'').read().split() if validName.search(nodeName)]
@@ -232,7 +234,7 @@ def mainLoop():
             log('ERROR: Encountered unregistered node {}!'.format(node.name))
             node.setState('R')
             if not node in slurmRunning:
-                subprocess.Popen(['scontrol', 'update', 'nodename=' + name, 'state=resume'])
+                subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
 
         # Nodes that are taking way too long to boot:
         for node in getNodesInState('C'):
