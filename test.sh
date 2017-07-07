@@ -13,10 +13,11 @@ execute() {
 	# Both arguments are ranges
 	numJobs=`rand $1`
 	timePerJob=$2
+	curTime=$(expr $(uptime) - $startTime)
 	while [ "$numJobs" -gt 0 ]; do
 		sleepTime=`rand $timePerJob`
 		echo -e "#!/bin/bash\necho 'Starting'\nsleep $sleepTime\necho 'Done'" | sbatch
-		echo "# Submitted sleep $sleepTime" >> out
+		echo "# Submitted sleep $sleepTime at t=$curTime" >> out
 		let "numJobs -= 1"
 	done
 }
