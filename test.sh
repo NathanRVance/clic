@@ -104,7 +104,7 @@ record() {
 	        curTime=$(expr $(uptime) - $startTime)
 	        echo "$curTime $qCount $rCount $nodesUp" >> out
 		sleep 10
-	        if ! `kill -0 $submitPID` && [ $qCount -eq 0 ] && [ $rCount -eq 0 ] && [ $nodesUp -eq 0 ]; then
+	        if ! `kill -0 $submitPID &> /dev/null` && [ $qCount -eq 0 ] && [ $rCount -eq 0 ] && [ $nodesUp -eq 0 ]; then
 	                break
 	        fi
 	done
