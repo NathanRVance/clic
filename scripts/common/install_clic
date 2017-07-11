@@ -40,5 +40,5 @@ echo -e "\n/etc/systemd/system/clic.service:" >> $CLIC_ROOT/clic.log 2>&1
 path="`which clic`"
 cat $CLIC_ROOT/files/clic.service | sed "s&PATH&$path&g" | sudo tee /etc/systemd/system/clic.service >> $CLIC_ROOT/clic.log 2>&1
 
-sudo systemctl enable clic.service
+sudo systemctl enable clic.service >> $CLIC_ROOT/clic.log 2>&1
 sudo systemctl restart clic.service

@@ -10,7 +10,5 @@ sudo apt -y install nfs-kernel-server sshfs python3-pip >> $CLIC_ROOT/clic.log 2
 $CLIC_ROOT/scripts/common/install_slurm
 
 # Enable/start nfs
-sudo systemctl enable nfs-kernel-server 
-sudo systemctl restart nfs-kernel-server 
-sudo systemctl enable nfs-idmapd
-sudo systemctl start nfs-idmapd
+sudo systemctl enable nfs-kernel-server  >> $CLIC_ROOT/clic.log 2>&1
+sudo systemctl restart nfs-kernel-server >> $CLIC_ROOT/clic.log 2>&1
