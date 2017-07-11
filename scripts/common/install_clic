@@ -12,7 +12,7 @@ if ! $cloud; then
 fi
 sudo clic-copyid --generate --append -u `whoami` $user `whoami` &> $CLIC_ROOT/clic.log
 
-sudo mkdir /etc/clic/
+sudo mkdir /etc/clic/ &> $CLIC_ROOT/clic.log
 echo "Populating /etc/clic/"
 
 #Create a config file
