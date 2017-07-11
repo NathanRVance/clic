@@ -2,7 +2,7 @@
 
 opts="-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=error"
 # One way or another, install git
-ssh $opts $user@$namescheme "sudo yum -y install git || sudo apt -y install git" &> $CLIC_ROOT/clic.log
+ssh $opts $user@$namescheme "sudo yum -y install git || sudo apt -y install git" >> $CLIC_ROOT/clic.log 2>&1
 # Install slurm
 echo "Installing slurm to $namescheme"
 echo "############ START REMOTE INSTALLATION ############"
@@ -12,19 +12,19 @@ echo "############ END REMOTE INSTALLATION ############"
 #sudo scp $opts -i ~/.ssh/id_rsa /etc/munge/munge.key $user@$namescheme:.
 #ssh $opts $user@$namescheme "sudo cp -f /home/$user/munge.key /etc/munge/munge.key && sudo chown munge:munge /etc/munge/munge.key && sudo chmod 400 /etc/munge/munge.key"
 # Copy over slurm.conf
-scp $opts /etc/slurm/slurm.conf $user@$namescheme:. &> $CLIC_ROOT/clic.log
-ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.conf /etc/slurm/slurm.conf && sudo chown root:root /etc/slurm/slurm.conf && sudo chmod 644 /etc/slurm/slurm.conf" &> $CLIC_ROOT/clic.log
+scp $opts /etc/slurm/slurm.conf $user@$namescheme:. >> $CLIC_ROOT/clic.log 2>&1
+ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.conf /etc/slurm/slurm.conf && sudo chown root:root /etc/slurm/slurm.conf && sudo chmod 644 /etc/slurm/slurm.conf" >> $CLIC_ROOT/clic.log 2>&1
 # Copy over slurm keys
-sudo scp $opts -i ~/.ssh/id_rsa /etc/slurm/slurm.key $user@$namescheme:. &> $CLIC_ROOT/clic.log
-ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.key /etc/slurm/slurm.key && sudo chown slurm:slurm /etc/slurm/slurm.key && sudo chmod 400 /etc/slurm/slurm.conf" &> $CLIC_ROOT/clic.log
-scp $opts /etc/slurm/slurm.cert $user@$namescheme:. &> $CLIC_ROOT/clic.log
-ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.cert /etc/slurm/slurm.cert && sudo chown root:root /etc/slurm/slurm.cert && sudo chmod 644 /etc/slurm/slurm.cert" &> $CLIC_ROOT/clic.log
+sudo scp $opts -i ~/.ssh/id_rsa /etc/slurm/slurm.key $user@$namescheme:. >> $CLIC_ROOT/clic.log 2>&1
+ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.key /etc/slurm/slurm.key && sudo chown slurm:slurm /etc/slurm/slurm.key && sudo chmod 400 /etc/slurm/slurm.conf" >> $CLIC_ROOT/clic.log 2>&1
+scp $opts /etc/slurm/slurm.cert $user@$namescheme:. >> $CLIC_ROOT/clic.log 2>&1
+ssh $opts $user@$namescheme "sudo mv -f /home/$user/slurm.cert /etc/slurm/slurm.cert && sudo chown root:root /etc/slurm/slurm.cert && sudo chmod 644 /etc/slurm/slurm.cert" >> $CLIC_ROOT/clic.log 2>&1
 
 # Allow ssh from node to localhost
-sudo useradd -m -s /bin/bash $user &> $CLIC_ROOT/clic.log
-sudo clic-copyid --append --generate &> $CLIC_ROOT/clic.log
-ssh $opts $user@$namescheme "if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa; fi" &> $CLIC_ROOT/clic.log
-ssh $opts $user@$namescheme "cat ~/.ssh/id_rsa.pub" | sudo tee -a /home/$user/.ssh/authorized_keys &> $CLIC_ROOT/clic.log
+sudo useradd -m -s /bin/bash $user >> $CLIC_ROOT/clic.log 2>&1
+sudo clic-copyid --append --generate >> $CLIC_ROOT/clic.log 2>&1
+ssh $opts $user@$namescheme "if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa; fi" >> $CLIC_ROOT/clic.log 2>&1
+ssh $opts $user@$namescheme "cat ~/.ssh/id_rsa.pub" | sudo tee -a /home/$user/.ssh/authorized_keys >> $CLIC_ROOT/clic.log 2>&1
 
 # Test node remote mounting
 sudo clic-initnode $user@$namescheme
@@ -37,7 +37,8 @@ rm -f ~/foo
 
 # Stop and snapshot the instance
 echo "Stopping $namescheme"
-gcloud compute instances stop $namescheme &> $CLIC_ROOT/clic.log
-gcloud compute disks snapshot $namescheme --snapshot-names=$namescheme
+gcloud compute instances stop $namescheme >> $CLIC_ROOT/clic.log 2>&1
+echo "Creating snapshot"
+gcloud compute disks snapshot $namescheme --snapshot-names=$namescheme >> $CLIC_ROOT/clic.log 2>&1
 
 echo "You are free to delete the instance named $namescheme if you desire."
