@@ -2,11 +2,11 @@
 
 # Install a bunch of stuff
 echo "Installing build dependencies"
-sudo yum -y install epel-release &> /dev/null
+sudo yum -y install epel-release &> $CLIC_ROOT/clic.log
 #sudo yum -y install munge munge-libs munge-devel &> /dev/null
-sudo yum -y install rpm-build gcc openssl openssl-devel pam-devel numactl numactl-devel hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel gtk2-devel man2html libibmad libibumad perl-Switch perl-ExtUtils-MakeMaker lua-devel &> /dev/null
-sudo yum -y install mariadb-server mariadb-devel &> /dev/null
-sudo yum -y install nfs-utils bind-utils fuse-sshfs python34 python34-setuptools &> /dev/null
+sudo yum -y install rpm-build gcc openssl openssl-devel pam-devel numactl numactl-devel hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel gtk2-devel man2html libibmad libibumad perl-Switch perl-ExtUtils-MakeMaker lua-devel &> $CLIC_ROOT/clic.log
+sudo yum -y install mariadb-server mariadb-devel &> $CLIC_ROOT/clic.log
+sudo yum -y install nfs-utils bind-utils fuse-sshfs python34 python34-setuptools &> $CLIC_ROOT/clic.log
 sudo easy_install-3.4 pip
 
 # Actually do the installation

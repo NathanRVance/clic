@@ -11,6 +11,6 @@ gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOM
 
-sudo yum -y install google-cloud-sdk
+sudo yum -y install google-cloud-sdk &> $CLIC_ROOT/clic.log
 
 sudo gcloud init

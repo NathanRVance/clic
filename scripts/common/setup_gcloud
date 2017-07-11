@@ -7,5 +7,5 @@ if [ "$cloud" == "false" ]; then
 	sudo su - -c "gcloud compute instances list &> /dev/null || gcloud init"
 
 	echo "Allowing tcp port 6818 for cloud instances"
-	sudo gcloud beta compute firewall-rules create "slurmd" --allow tcp:6818 --direction "INGRESS" --priority "1000" --network "default" --source-ranges "0.0.0.0/0"
+	sudo gcloud beta compute firewall-rules create "slurmd" --allow tcp:6818 --direction "INGRESS" --priority "1000" --network "default" --source-ranges "0.0.0.0/0" &> $CLIC_ROOT/clic.log
 fi

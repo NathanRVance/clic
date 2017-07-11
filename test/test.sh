@@ -79,12 +79,12 @@ done
 
 startTime=`uptime`
 echo "# Submits $NUMBER $DURATION second jobs every $WAIT seconds for $CONTINUOUS iterations" > out
-echo "time jobsQueued jobsRunning nodesUp" >> out
+echo "time jobsQueued jobsRunning nodesUp jobsSubmitted" >> out
 
 submit() {
 	while :; do
 		if [ "$CONTINUOUS" -gt 0 ]; then
-			execute `rand $NUMBER` $DURATION
+			execute $NUMBER $DURATION
 			let "CONTINUOUS -= 1"
 		else
 			break
@@ -103,9 +103,49 @@ record() {
 	        echo "$curTime $qCount $rCount $nodesUp" >> out
 		sleep 10
 	        if ! `kill -0 $submitPID &> /dev/null` && [ $qCount -eq 0 ] && [ $rCount -eq 0 ] && [ $nodesUp -eq 0 ]; then
+			fixStuff
 	                break
 	        fi
 	done
+}
+
+
+fixStuff() {
+	mod () {
+		local t=$1
+		local num=$2
+		bestT=-1
+		# Find the time closest to t in file
+		while read line; do
+			if [[ $line =~ ^[0-9].*$ ]]; then
+				lineT=`echo $line | awk '{print $1}'`
+				if [ $lineT -le $t ] || [ $bestT -eq -1 ]; then bestT=$lineT
+				else break
+				fi
+			fi
+		done <<< `cat $file`
+		# Modify that line
+		echo "fixing t=$bestT: $num"
+		sed -i "s/^$bestT \(.*\)/$bestT \1 $num/" $file
+	}
+	
+	lastT=0
+	num=0
+	sleepDat="`grep "# Submitted sleep" long2 | sed 's/# Submitted sleep \([0-9]*\) at t=\([0-9]*\)/\2 \1/'`"
+	while read i; do
+		t=`echo $i | awk '{print $1}'`
+		if [ $t -le `expr $lastT + 5` ]; then
+			let "num += 1"
+		else
+			mod $lastT $num
+			lastT=$t
+			num=1
+		fi
+	done <<< $sleepDat
+	mod $lastT $num
+
+	#Fill in zeros
+	sed -i 's/^\([0-9]*\) \([0-9]*\) \([0-9]*\) \([0-9]*\)$/\1 \2 \3 \4 0/' $file
 }
 
 submit &
