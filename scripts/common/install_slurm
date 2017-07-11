@@ -65,7 +65,7 @@ LimitSTACK=infinity
 [Install]
 WantedBy=multi-user.target" | sudo tee /etc/systemd/system/slurmd.service &> $CLIC_ROOT/clic.log
 
-sudo mkdir /var/spool/slurmctld /var/log/slurm
+sudo mkdir /var/spool/slurmctld /var/log/slurm &> $CLIC_ROOT/clic.log
 sudo chown slurm: /var/spool/slurmctld /var/log/slurm
 sudo chmod 755 /var/spool/slurmctld /var/log/slurm
 
@@ -75,7 +75,7 @@ sudo chown slurm: /var/log/slurm/slurmctld.log
 sudo touch /var/log/slurm/slurm_jobacct.log /var/log/slurm/slurm_jobcomp.log
 sudo chown slurm: /var/log/slurm/slurm_jobacct.log /var/log/slurm/slurm_jobcomp.log
 
-sudo mkdir /etc/slurm
+sudo mkdir /etc/slurm &> $CLIC_ROOT/clic.log
 sudo chown slurm: /etc/slurm
 
 # Add job_submit.lua so that jobs go to the correct partitions
