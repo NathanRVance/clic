@@ -8,21 +8,36 @@ CLIC creates a virtual, automatically resizing cluster in a cloud environment. T
   * Queueing system: SLURM
   * File sharing: NFS through a SSH tunnel
   * Implementation languages: bash scripts for installation and python3 for execution
-  * Cloud environment: Google Compute Engine
+  * Cloud environment: Google Compute Engine (GCE)
 
 The CLIC daemon monitors the SLURM queue. If CLIC detects that the cluster is overwhelmed by jobs, it creates new instances to handle these jobs. When the new instances come online, CLIC notifies SLURM that they are able to recieve jobs, and SLURM incorporates them into the cluster. If CLIC detects that the cluster is underutilized, it notifies SLURM that it is removing some of the idle instances, then deletes those intances from the cloud.
 
+## Pure Cloud vs Hybrid Clusters
+
+There are two ways of installing CLIC. One is to have both the head node and the compute nodes housed in the same cloud. This has several benefits:
+  * Security: All intra-cluster communication occurs over a private LAN.
+  * Convenience: Both the head node and compute nodes can be backed up using snapshots.
+  * Reliability: Cloud computers tend to have better uptime than other hosting schemes.
+
+There is, however, a serious drawback:
+  * Cost: When job submission is sporadic (leaving the cluster empty for hours on end), the cost of keeping the headnode running can outweigh the cost of the rest of the cluster.
+
+Alternatively, CLIC supports a hybrid approach in which the headnode is physical (outside of the cloud) and only the compute nodes are within the cloud. This can save on costs, but security, convenience, and reliability may suffer.
+
 ## Quickstart
 
-1. Create a GCE instance. The name given this instance will become the base name of the cluster. For example, if you name it NAME, then instances created by CLIC will follow the pattern NAME-PARTITION-ID, where PARTITION is the SLURM partition that the node belongs to, and ID differentiates between nodes in a partition.
+1. Create a GCE instance. The name given this instance will become the base name of the cluster. For example, if you name it NAME, then instances created by CLIC will follow the pattern NAME-PARTITION-ID, where PARTITION is the SLURM partition to which the node belongs, and ID differentiates among nodes in a partition.
 
-2. Execute the `install` script  
-&nbsp;&nbsp;`./install --namescheme NAME`  
-where NAME is the hostname of the GCE instance (defaults to hostname of the machine install is run on).
+2. Install CLIC
+  * Pure Cloud: execute the `install` script on NAME:  
+    `./install`  
+    Then shut down, snapshot, and re-start NAME. The snapshot must be named NAME, otherwise clic.conf must be edited to point to the correct snapshot name.
 
-3. If installing using a cloud headnode, then shut down, snapshot, and re-start the headnode. The snapshot must have the same name as the headnode so that CLIC can use it to create additional instances.
+  * Hybrid: execute the `install` script on the physical headnode:  
+    `./install --namescheme NAME`  
+    where NAME is the hostname of the GCE instance.
 
-4. Use sbatch to submit jobs. It takes about 2 minutes for CLIC to create cloud instances to handle jobs.
+3. Use sbatch to submit jobs. It takes about 2 minutes for CLIC to create cloud instances to handle jobs.
 
 ## Configuration
 ### clic.conf

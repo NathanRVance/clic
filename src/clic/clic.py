@@ -22,6 +22,7 @@ minRuntime = settings.getint('minRuntime')
 
 user = settings['user']
 namescheme = settings['namescheme']
+snapshot = settings['snapshot']
 logfile = settings['logfile']
 isCloud = settings.getboolean('cloudHeadnode')
 validName = re.compile('^' + namescheme + '-\w+-\d+$')
@@ -160,7 +161,7 @@ def create(numToCreate, partition):
         node.errors = 0
         subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Creating"'])
         log('Creating {}'.format(node.name))
-        subprocess.Popen('gcloud compute disks create {0} --size {3} --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-{4}-{2}" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {5}'.format(node.name, namescheme, partition.cpus, partition.disk, partition.mem, logfile), shell=True)
+        subprocess.Popen('gcloud compute disks create {0} --size {3} --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-{4}-{2}" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {5}'.format(node.name, snapshot, partition.cpus, partition.disk, partition.mem, logfile), shell=True)
         numToCreate -= 1
 
 def deleteNode(node):
