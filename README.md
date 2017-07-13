@@ -14,15 +14,7 @@ The CLIC daemon monitors the SLURM queue. If CLIC detects that the cluster is ov
 
 ## Pure Cloud vs Hybrid Clusters
 
-There are two ways of installing CLIC. One is to have both the head node and the compute nodes housed in the same cloud. This has several benefits:
-  * Security: All intra-cluster communication occurs over a private LAN.
-  * Convenience: Both the head node and compute nodes can be backed up using snapshots.
-  * Reliability: Cloud computers tend to have better uptime than other hosting schemes.
-
-There is, however, a serious drawback:
-  * Cost: When job submission is sporadic (leaving the cluster empty for hours on end), the cost of keeping the headnode running can outweigh the cost of the rest of the cluster.
-
-Alternatively, CLIC supports a hybrid approach in which the headnode is physical (outside of the cloud) and only the compute nodes are within the cloud. This can save on costs, but security, convenience, and reliability may suffer.
+There are two ways of installing CLIC. One is to have both the head node and the compute nodes housed in the same cloud. Alternatively, CLIC supports a hybrid approach in which the headnode is physical (outside of the cloud) and only the compute nodes are within the cloud. This can save on costs when compared to a pure cloud cluster, but security, convenience, and reliability may suffer.
 
 ## Quickstart
 
@@ -35,7 +27,7 @@ Alternatively, CLIC supports a hybrid approach in which the headnode is physical
 
     * Hybrid: execute the `install` script on the physical headnode:  
       `./install --namescheme NAME`  
-      where NAME is the hostname of the GCE instance.
+      where NAME is the name of the GCE instance (not necessarily the headnode).
 
 3. Use sbatch to submit jobs. It takes about 2 minutes for CLIC to create cloud instances to handle jobs.
 
@@ -49,12 +41,15 @@ The main configuration file is /etc/clic/clic.conf. Normally, the only part of t
 
 Each of these fields allows for comma separated values, and SLURM partitions will be created by CLIC for every valid combination of values. Things are done this way so that SLURM doesn't run jobs on overprovisioned nodes, which would make CLIC unable to delete them when scaling the cluster.
 
-Partitions are named X-cpu-Y-disk-memtype (dashes inserted for clarity) where X is the number of cpus and Y is the size of the disk in GB. To submit a job for a particular machine architecture, you may specify the corresponding partition, eg:  
-&nbsp;&nbsp;`sbatch --partition=4cpu100diskstandard job.sh`  
-Equivalently, specify individual node charictaristsics:  
-&nbsp;&nbsp;`sbatch --mincpus=4 --tmp=102400 --mem=15360 job.sh`  
-The Lua script /etc/slurm/job\_submit.lua places the job in the correct partition if none is specified with the --partition flag.
-
 ### Initialization scripts
 
-When cloud nodes are created, all executable files in /etc/clic/ are copied to the node and run with command line arguments cpus, disksize, and memory, matching the values embedded in the partition name. See /etc/clic/example.sh for an example.
+When cloud nodes are created, all executable files in /etc/clic/ are copied to the node. These scripts are then run with command line arguments cpus, disksize, and memory, matching the values embedded in the partition name. See /etc/clic/example.sh for an example.
+
+## Submitting Jobs
+
+Partitions are named X-cpu-Y-disk-memtype (dashes inserted for clarity) where X is the number of cpus and Y is the size of the disk in GB. To submit a job for a particular machine architecture, you may specify any combination of architecture charictaristics in the job file or on the command line, eg:  
+&nbsp;&nbsp;`sbatch --mincpus=4 --tmp=102400 --mem=15360 job.sh`  
+The Lua script /etc/slurm/job\_submit.lua places the job in a partition that meets the requirements while minimizing cpus, memory, and disk size, in that order.
+
+Equivalently, the name of the partition can be specified:
+&nbsp;&nbsp;`sbatch --partition=4cpu100diskstandard job.sh`  

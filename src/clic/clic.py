@@ -17,9 +17,8 @@ config.read('/etc/clic/clic.conf')
 settings = config['Daemon']
 
 # Constants
-waitTime = settings.getint('waitTime')
 minRuntime = settings.getint('minRuntime')
-
+slurmDir = settings['slurmDir']
 user = settings['user']
 namescheme = settings['namescheme']
 snapshot = settings['snapshot']
@@ -124,11 +123,11 @@ def getDeletableNodes(partition):
 def addToSlurmConf(node):
     data = ''
     pattern = re.compile('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name))
-    with open('/etc/slurm/slurm.conf') as f:
+    with open('{}/slurm.conf'.format(slurmDir)) as f:
         data = f.read()
     if int(pattern.search(data).group(0)) < node.num:
         data = pattern.sub(str(node.num), data)
-        with open('/etc/slurm/slurm.conf', 'w') as f:
+        with open('{}/slurm.conf'.format(slurmDir), 'w') as f:
             f.write(data)
         restartSlurmd(node)
 
@@ -274,7 +273,7 @@ def mainLoop():
                 for node in running:
                     if node.timeInState() < 60:
                         unutilized += 1
-                jobsWaitingTooLong = [job for job in jobs[partition] if job.timeWaiting() > waitTime]
+                jobsWaitingTooLong = [job for job in jobs[partition] if job.timeWaiting() > 30]
                 create(int((len(jobsWaitingTooLong) + 1) / 2 - len(creating) - len(deletable) - unutilized), partition)
             # Delete nodes
             if len(deletable) > 0 and len(jobs[partition]) == 0:
@@ -301,21 +300,21 @@ def main():
     if os.popen('hostname -s').read().strip() == namescheme or not isCloud:
         # This is the head node
         log('Starting clic as a head node')
-        # Initialize /etc/slurm/slurm.conf
+        # Initialize slurm.conf
         data = ''
-        with open('/etc/slurm/slurm.conf') as f:
+        with open('{}/slurm.conf'.format(slurmDir)) as f:
             data = f.read()
         for partition in partitions:
             if not re.search('={0}-{1}-\[0-\d+\] '.format(namescheme, partition.name), data):
                 # RealMemory, TmpDisk in mb
                 data += 'NodeName={0}-{1}-[0-0] CPUs={2} TmpDisk={3} RealMemory={4} State=UNKNOWN\n'.format(namescheme, partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024)
                 data += 'PartitionName={1} Nodes={0}-{1}-[0-0] MaxTime=UNLIMITED State=UP\n'.format(namescheme, partition.name)
-        with open('/etc/slurm/slurm.conf', 'w') as f:
+        with open('{}/slurm.conf'.format(slurmDir), 'w') as f:
             f.write(data)
 
-        # Initialize /etc/slurm/job_submit.lua
+        # Initialize job_submit.lua
         data = []
-        with open('/etc/slurm/job_submit.lua') as f:
+        with open('{}/job_submit.lua'.format(slurmDir)) as f:
             data = f.readlines()
         start = 0
         for start in range(len(data)):
@@ -326,7 +325,7 @@ def main():
                 break
         for partition in partitions:
             data.insert(start, '\tparts["{0}"] = {{ cpus = {1}, disk = {2}, mem = {3} }}\n'.format(partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024))
-        with open('/etc/slurm/job_submit.lua', 'w') as f:
+        with open('{}/job_submit.lua'.format(slurmDir), 'w') as f:
             f.writelines(data)
 
         log('Starting slurmctld.service')
