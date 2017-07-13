@@ -13,7 +13,5 @@ sudo easy_install-3.4 pip >> $CLIC_ROOT/clic.log 2>&1
 $CLIC_ROOT/scripts/common/install_slurm
 
 # Enable and start nfs (this is platform specific)
-sudo systemctl enable nfs
+sudo systemctl enable nfs >> $CLIC_ROOT/clic.log 2>&1
 sudo systemctl restart nfs
-sudo systemctl enable nfs-idmapd
-sudo systemctl start nfs-idmapd

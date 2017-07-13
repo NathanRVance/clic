@@ -18,12 +18,12 @@ There are two ways of installing CLIC. One is to have both the head node and the
 
 ## Quickstart
 
-1. Create a GCE instance. The name given this instance will become the base name of the cluster. For example, if you name it NAME, then instances created by CLIC will follow the pattern NAME-PARTITION-ID, where PARTITION is the SLURM partition to which the node belongs, and ID differentiates among nodes in a partition.
+1. Create a GCE instance. The name given this instance will become the base name of the cluster. For example, if you name it NAME, then instances created by CLIC will follow the pattern NAME-PARTITION-ID, where PARTITION is the SLURM partition to which the node belongs, and ID differentiates among nodes in a partition. If you are creating a cloud head node, set the API access scope to "Allow full access to all Cloud APIs"
 
 2. Install CLIC
     * Pure Cloud: execute the `install` script on NAME:  
       `./install`  
-      Then shut down, snapshot, and re-start NAME. The snapshot must be named NAME, otherwise clic.conf must be edited to point to the correct snapshot name.
+      Then shut down, snapshot, and restart NAME. The snapshot must be named NAME, otherwise clic.conf must be edited to point to the correct snapshot name.
 
     * Hybrid: execute the `install` script on the physical headnode:  
       `./install --namescheme NAME`  
@@ -51,5 +51,5 @@ Partitions are named X-cpu-Y-disk-memtype (dashes inserted for clarity) where X 
 &nbsp;&nbsp;`sbatch --mincpus=4 --tmp=102400 --mem=15360 job.sh`  
 The Lua script /etc/slurm/job\_submit.lua places the job in a partition that meets the requirements while minimizing cpus, memory, and disk size, in that order.
 
-Equivalently, the name of the partition can be specified:
+Equivalently, the name of the partition can be specified:  
 &nbsp;&nbsp;`sbatch --partition=4cpu100diskstandard job.sh`  
