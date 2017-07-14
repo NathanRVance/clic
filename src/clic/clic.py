@@ -299,6 +299,8 @@ def main():
     parser = argparse.ArgumentParser(description='Start the clic daemon')
     from clic import version
     parser.add_argument('-v', '--version', action='version', version=version.__version__)
+    parser.parse_args()
+
     Thread(target = startServer).start()
 
     if os.popen('hostname -s').read().strip() == namescheme or not isCloud:
