@@ -51,6 +51,8 @@ def main():
     import argparse
     import re
     parser = argparse.ArgumentParser(description='Remotely execute commands using ssh')
+    from clic import version
+    parser.add_argument('-v', '--version', action='version', version=version.__version__)
     parser.add_argument('--key', metavar='KEY_OWNER', nargs=1, help='use the key in KEY_OWNER\'s ~/.ssh directory when connecting to USER@HOST. Otherwise, pssh uses the key of the user that executes pssh.')
     parser.add_argument('userhost', metavar='USER@HOST', nargs=1, help='connect to USER at HOST')
     group = parser.add_mutually_exclusive_group()

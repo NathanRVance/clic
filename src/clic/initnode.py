@@ -36,6 +36,8 @@ def main():
     import argparse
     import re
     parser = argparse.ArgumentParser(description='Intitialize a node for use with clic by configuring its /etc/hosts and nfs. This script is run from the head node.')
+    from clic import version
+    parser.add_argument('-v', '--version', action='version', version=version.__version__)
     parser.add_argument('userhost', metavar='USER@HOST', nargs=1, help='passwordless ssh exists both ways between USER@localhost and USER@HOST')
     args = parser.parse_args()
     [user, host] = args.userhost[0].split('@')

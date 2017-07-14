@@ -20,6 +20,8 @@ def all(running):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Obtain a list of nodes that are running')
+    from clic import version
+    parser.add_argument('-v', '--version', action='version', version=version.__version__)
     parser.add_argument('-r', '--responds', metavar='USER', nargs=1, help='include only nodes that respond to ssh connections')
     args = parser.parse_args()
 

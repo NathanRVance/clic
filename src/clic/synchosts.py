@@ -30,6 +30,8 @@ def addAll():
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Modify /etc/hosts. Default action is add ip addresses for compute nodes')
+    from clic import version
+    parser.add_argument('-v', '--version', action='version', version=version.__version__)
     parser.add_argument('hostip', metavar='HOST:IP', nargs='?', help='add HOST:ID mapping to /etc/hosts')
     args = parser.parse_args()
     

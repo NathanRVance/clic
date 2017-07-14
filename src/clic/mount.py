@@ -23,6 +23,8 @@ def main():
     import argparse
     import re
     parser = argparse.ArgumentParser(description='Mount remote home directory (NOTE: preserves /home/*/.ssh)')
+    from clic import version
+    parser.add_argument('-v', '--version', action='version', version=version.__version__)
     parser.add_argument('userhost', metavar='USER@HOST', nargs=1, help='passwordless ssh exists from USER@localhost to USER@HOST')
     args = parser.parse_args()
     # Error checking

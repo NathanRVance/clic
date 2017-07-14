@@ -48,6 +48,8 @@ def send():
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Copy public keys to cloud computers')
+    from clic import version
+    parser.add_argument('-v', '--version', action='version', version=version.__version__)
     parser.add_argument('-g', '--generate', action='store_true', help='generate public keys for users without one')
     parser.add_argument('-a', '--append', action='store_true', help='append keys to existing keys (default: replace)')
     parser.add_argument('-u', metavar=('LOCAL_USER', 'REMOTE_USER'), nargs=2, help='allow ssh from LOCAL_USER to REMOTE_USER')

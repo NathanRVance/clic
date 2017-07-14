@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 from setuptools import setup
 
+import re
+vers = re.search('(?<=__version__ = [\'"]).*(?=[\'"])', open('clic/version.py', 'rt').read()).group(0)
+
 setup(
         name='clic',
-        version='0.0.7',
+        version=vers,
         description='CLuster In the Cloud',
         long_description='Dynamically resizing high throughput cloud computing',
         url='https://github.com/nathanrvance/clic',
