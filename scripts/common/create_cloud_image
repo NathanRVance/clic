@@ -8,25 +8,27 @@ echo "############ START REMOTE INSTALLATION ############"
 echo "Aggregating output. Usually takes a few minutes."
 clic-ssh $user@$namescheme --command "rm -rf clic; git clone https://github.com/nathanrvance/clic; ./clic/install -s --head $head --compute $compute --zone $zone"
 echo "############ END REMOTE INSTALLATION ############"
-# Copy over munge key
-#sudo scp $opts -i ~/.ssh/id_rsa /etc/munge/munge.key $user@$namescheme:.
-#ssh $opts $user@$namescheme "sudo cp -f /home/$user/munge.key /etc/munge/munge.key && sudo chown munge:munge /etc/munge/munge.key && sudo chmod 400 /etc/munge/munge.key"
-# Copy over slurm.conf
-clic-ssh $user@$namescheme --copy /etc/slurm/slurm.conf .
-clic-ssh $user@$namescheme --command "sudo mv -f /home/$user/slurm.conf /etc/slurm/slurm.conf && sudo chown root:root /etc/slurm/slurm.conf && sudo chmod 644 /etc/slurm/slurm.conf" #>> $CLIC_ROOT/clic.log 2>&1
-# Copy over slurm keys
-sudo clic-ssh $user@$namescheme --key $user --copy /etc/slurm/slurm.key .
-clic-ssh $user@$namescheme --command "sudo mv -f /home/$user/slurm.key /etc/slurm/slurm.key && sudo chown slurm:slurm /etc/slurm/slurm.key && sudo chmod 400 /etc/slurm/slurm.conf" #>> $CLIC_ROOT/clic.log 2>&1
-clic-ssh $user@$namescheme --copy /etc/slurm/slurm.cert .
-clic-ssh $user@$namescheme --command "sudo mv -f /home/$user/slurm.cert /etc/slurm/slurm.cert && sudo chown root:root /etc/slurm/slurm.cert && sudo chmod 644 /etc/slurm/slurm.cert" #>> $CLIC_ROOT/clic.log 2>&1
-
-# Allow ssh from node to localhost
-sudo useradd -m -s /bin/bash $user #>> $CLIC_ROOT/clic.log 2>&1
-sudo clic-copyid --append --generate #>> $CLIC_ROOT/clic.log 2>&1
-clic-ssh $user@$namescheme --command "if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa; fi" #>> $CLIC_ROOT/clic.log 2>&1
-clic-ssh $user@$namescheme --command "cat ~/.ssh/id_rsa.pub" | sudo tee -a /home/$user/.ssh/authorized_keys #>> $CLIC_ROOT/clic.log 2>&1
-
 if [ "`hostname`" == "$head" ]; then
+	# Only do this stuff from the head node
+
+	# Copy over munge key
+	#sudo scp $opts -i ~/.ssh/id_rsa /etc/munge/munge.key $user@$namescheme:.
+	#ssh $opts $user@$namescheme "sudo cp -f /home/$user/munge.key /etc/munge/munge.key && sudo chown munge:munge /etc/munge/munge.key && sudo chmod 400 /etc/munge/munge.key"
+	# Copy over slurm.conf
+	clic-ssh $user@$namescheme --copy /etc/slurm/slurm.conf .
+	clic-ssh $user@$namescheme --command "sudo mv -f /home/$user/slurm.conf /etc/slurm/slurm.conf && sudo chown root:root /etc/slurm/slurm.conf && sudo chmod 644 /etc/slurm/slurm.conf" #>> $CLIC_ROOT/clic.log 2>&1
+	# Copy over slurm keys
+	sudo clic-ssh $user@$namescheme --key $user --copy /etc/slurm/slurm.key .
+	clic-ssh $user@$namescheme --command "sudo mv -f /home/$user/slurm.key /etc/slurm/slurm.key && sudo chown slurm:slurm /etc/slurm/slurm.key && sudo chmod 400 /etc/slurm/slurm.conf" #>> $CLIC_ROOT/clic.log 2>&1
+	clic-ssh $user@$namescheme --copy /etc/slurm/slurm.cert .
+	clic-ssh $user@$namescheme --command "sudo mv -f /home/$user/slurm.cert /etc/slurm/slurm.cert && sudo chown root:root /etc/slurm/slurm.cert && sudo chmod 644 /etc/slurm/slurm.cert" #>> $CLIC_ROOT/clic.log 2>&1
+	
+	# Allow ssh from node to localhost
+	sudo useradd -m -s /bin/bash $user #>> $CLIC_ROOT/clic.log 2>&1
+	sudo clic-copyid --append --generate #>> $CLIC_ROOT/clic.log 2>&1
+	clic-ssh $user@$namescheme --command "if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa; fi" #>> $CLIC_ROOT/clic.log 2>&1
+	clic-ssh $user@$namescheme --command "cat ~/.ssh/id_rsa.pub" | sudo tee -a /home/$user/.ssh/authorized_keys #>> $CLIC_ROOT/clic.log 2>&1
+
 	# Test node remote mounting
 	sudo clic-initnode $user@$namescheme
 	clic-ssh $user@$namescheme --command "touch foo"
