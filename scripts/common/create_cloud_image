@@ -35,10 +35,5 @@ if [ ! -e ~/foo ]; then
 fi
 rm -f ~/foo
 
-# Stop and snapshot the instance
-echo "Stopping $namescheme"
-gcloud compute instances stop $namescheme >> $CLIC_ROOT/clic.log 2>&1
-echo "Creating snapshot"
-gcloud compute disks snapshot $namescheme --snapshot-names=$namescheme >> $CLIC_ROOT/clic.log 2>&1
-
-echo "You are free to delete the instance named $namescheme if you desire."
+# Make an image
+sudo clic-cloud --image $namescheme
