@@ -151,7 +151,7 @@ class gcloud(abstract_cloud):
         current = self.api.projects().get(project=self.project).execute()['commonInstanceMetadata']
         formatKeys = [':'.join(key) for key in keys]
         next(value for value in current['items'] if value['key'] == 'sshKeys')['value'] = '\n'.join(formatKeys)
-        self.api.projects().setCommonInstanceMetadata(project=self.project, body=current).execute()
+        self.wait(self.api.projects().setCommonInstanceMetadata(project=self.project, body=current).execute())
 
     def nodesUp(self, running):
         allNodes = []
