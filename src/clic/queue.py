@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from nodes import Node
-from nodes import Partition
+from clic.nodes import Node
+from clic.nodes import Partition
 import re
 import os
 import subprocess
@@ -33,6 +33,7 @@ class slurm(abstract_queue):
     def __init__(self, isHeadnode):
         import configparser
         config = configparser.ConfigParser()
+        config.read('/etc/clic/clic.conf')
         self.slurmDir = config['Queue']['slurmDir']
         self.namescheme = config['Daemon']['namescheme']
         self.isHeadnode = isHeadnode
