@@ -77,7 +77,7 @@ class gcloud(abstract_cloud):
 
         print("Recreating instance")
         config = {'name': instanceName, 'machineType': machineType,
-            'disks' [
+            'disks': [
                 {
                     'boot': True,
                     'autoDelete': True,
