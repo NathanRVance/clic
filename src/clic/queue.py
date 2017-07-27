@@ -36,6 +36,7 @@ class slurm(abstract_queue):
         config.read('/etc/clic/clic.conf')
         self.slurmDir = config['Queue']['slurmDir']
         self.namescheme = config['Daemon']['namescheme']
+        self.user = config['Daemon']['user']
         self.isHeadnode = isHeadnode
         if isHeadnode:
             subprocess.Popen(['systemctl', 'restart', 'slurmctld.service']).wait()
@@ -83,7 +84,7 @@ class slurm(abstract_queue):
 
     def restartSlurmd(self, node):
         from clic import pssh
-        pssh.run(user, user, node.name, 'sudo systemctl restart slurmd.service')
+        pssh.run(self.user, self.user, node.name, 'sudo systemctl restart slurmd.service')
 
     def queuedJobs(self):
         return [job.split() for job in os.popen('squeue -h -t pd -o "%A %P"').read().strip().split('\n') if len(job.split()) == 2]

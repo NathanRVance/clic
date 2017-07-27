@@ -24,19 +24,19 @@ if [ "`hostname`" == "$head" ]; then
 	clic-ssh $user@$namescheme --command "sudo mv -f /home/$user/slurm.cert /etc/slurm/slurm.cert && sudo chown root:root /etc/slurm/slurm.cert && sudo chmod 644 /etc/slurm/slurm.cert" #>> $CLIC_ROOT/clic.log 2>&1
 	
 	# Allow ssh from node to localhost
-	#sudo useradd -m -s /bin/bash $user #>> $CLIC_ROOT/clic.log 2>&1
-	#sudo clic-copyid --append --generate #>> $CLIC_ROOT/clic.log 2>&1
-	#clic-ssh $user@$namescheme --command "if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa; fi" #>> $CLIC_ROOT/clic.log 2>&1
-	#clic-ssh $user@$namescheme --command "cat ~/.ssh/id_rsa.pub" | sudo tee -a /home/$user/.ssh/authorized_keys #>> $CLIC_ROOT/clic.log 2>&1
+	sudo useradd -m -s /bin/bash $user #>> $CLIC_ROOT/clic.log 2>&1
+	sudo clic-copyid --append --generate #>> $CLIC_ROOT/clic.log 2>&1
+	clic-ssh $user@$namescheme --command "if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa; fi" #>> $CLIC_ROOT/clic.log 2>&1
+	clic-ssh $user@$namescheme --command "cat ~/.ssh/id_rsa.pub" | sudo tee -a /home/$user/.ssh/authorized_keys #>> $CLIC_ROOT/clic.log 2>&1
 
 	# Test node remote mounting
-	#sudo clic-initnode $user@$namescheme
-	#clic-ssh $user@$namescheme --command "touch foo"
-	#if [ ! -e ~/foo ]; then
-	#	echo "Failed to create file remotely!"
-	#	exit 1
-	#fi
-	#rm -f ~/foo
+	sudo clic-initnode $user@$namescheme
+	clic-ssh $user@$namescheme --command "touch foo"
+	if [ ! -e ~/foo ]; then
+		echo "Failed to create file remotely!"
+		exit 1
+	fi
+	rm -f ~/foo
 fi
 
 # Make an image

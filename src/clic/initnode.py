@@ -6,6 +6,10 @@ from clic import pssh
 
 def init(user, host, skipsync, cpus, disk, mem):
     # Sync UIDs and GIDs
+    remoteUsers = pssh.run(user, user, host, 'ls /home')[0].split()
+    for index, user in enumerate(remoteUsers):
+        tmpID = 2000 + index
+        pssh.run(user, user, host, 'nohup sudo su - -c \'usermod -o -u {1} {0}; groupmod -o -g {2} {0}\' &> /dev/null &'.format(user, tmpID, tmpID))
     for path in Path('/home').iterdir():
         if path.is_dir():
             localUser = path.parts[-1]
