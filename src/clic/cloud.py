@@ -84,6 +84,7 @@ class gcloud(abstract_cloud):
                     'deviceName': diskName
                 }
             ],
+            "serviceAccounts": [ { "scopes": [ "https://www.googleapis.com/auth/cloud-platform" ] } ],
             # Specify a network interface with NAT to access the public
             # internet.
             'networkInterfaces': [{
