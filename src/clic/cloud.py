@@ -81,7 +81,8 @@ class gcloud(abstract_cloud):
                 {
                     'boot': True,
                     'autoDelete': True,
-                    'deviceName': diskName
+                    'deviceName': diskName,
+                    'source': 'projects/{0}/zones/{1}/disks/{2}'.format(self.project, self.zone, diskName)
                 }
             ],
             "serviceAccounts": [ { "scopes": [ "https://www.googleapis.com/auth/cloud-platform" ] } ],
