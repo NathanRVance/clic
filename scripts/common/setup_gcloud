@@ -4,10 +4,14 @@
 
 if ! $cloud; then
 	# Make sure gcloud is set up for the root user
+	echo "Obtaining oauth2 credentials"
 	sudo su - -c "gcloud auth application-default login"
 	mkdir -p /home/`whoami`/.config/gcloud/
 	sudo cp /root/.config/gcloud/application_default_credentials.json /home/`whoami`/.config/gcloud/application_default_credentials.json
 	sudo chown `whoami`:`whoami` /home/`whoami`/.config/gcloud/application_default_credentials.json
+
+	echo "Logging in as user"
+	gcloud init
 
 	echo "Allowing tcp port 6818 for cloud instances"
 	sudo gcloud beta compute firewall-rules create "slurmd" --allow tcp:6818 --direction "INGRESS" --priority "1000" --network "default" --source-ranges "0.0.0.0/0" >> $CLIC_ROOT/clic.log 2>&1
