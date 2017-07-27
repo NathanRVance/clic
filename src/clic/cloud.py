@@ -66,10 +66,34 @@ class gcloud(abstract_cloud):
         diskName = [disk for disk in self.api.instances().get(project=self.project, zone=self.zone, instance=instanceName).execute()['disks'] if disk['boot']][0]['deviceName']
         print("Setting disk autodelete to False")
         self.wait(self.api.instances().setDiskAutoDelete(project=self.project, zone=self.zone, instance=instanceName, autoDelete=False, deviceName=diskName).execute())
+        
+        # Grab instance data to recreate it later
+        machineType = self.api.instances().get(project=self.project, zone=self.zone, instance=instanceName).execute()['machineType']
+
         print("Deleting instance")
         self.wait(self.deleteName(instanceName))
         # Create the image
         self.diskToImage(diskName)
+
+        print("Recreating instance")
+        config = {'name': instanceName, 'machineType': machineType,
+            'disks' [
+                {
+                    'boot': True,
+                    'autoDelete': True,
+                    'deviceName': diskName
+                }
+            ],
+            # Specify a network interface with NAT to access the public
+            # internet.
+            'networkInterfaces': [{
+                'network': 'global/networks/default',
+                'accessConfigs': [
+                    {'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}
+                ]
+            }]
+        }
+        self.wait(self.api.instances().insert(project=self.project, zone=self.zone, body=config).execute())
 
     def diskToImage(self, diskName):
         print("Creating image")

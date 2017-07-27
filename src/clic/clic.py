@@ -310,6 +310,12 @@ def main():
         with open('{}/job_submit.lua'.format(slurmDir), 'w') as f:
             f.writelines(data)
 
+        # Sort out ssh keys
+        from clic import copyid
+        copyid.refresh(True)
+        copyid.copy(True, user, user)
+        copyid.send()
+
         log('Starting slurmctld.service')
         subprocess.Popen(['systemctl', 'restart', 'slurmctld.service']).wait()
         mainLoop()
