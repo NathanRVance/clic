@@ -19,6 +19,7 @@ export compute="localhost"
 export namescheme=`hostname`
 export script=false
 export skip_slurm=false
+export user=`whoami`
 
 ARGS=`getopt -n clic-install -o hs --long help,skip_slurm,head:,compute: -- "$@"`
 if [ $? != 0 ] ; then
