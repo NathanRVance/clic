@@ -31,6 +31,11 @@ validName = re.compile('^' + namescheme + '-\w+-\d+$')
 from clic import cloud as api
 cloud = api.getCloud()
 
+# Queue settings
+isHeadnode = os.popen('hostname -s').read().strip() == namescheme or not isCloud
+from clic import queue as q
+queue = q.getQueue(isHeadnode)
+
 # Node settings
 settings = config['Nodes']
 cpuValues = settings['cpus'].replace(' ', '').split(',')
@@ -92,30 +97,8 @@ def getFreeNode(partition):
     return node
 
 def getDeletableNodes(partition):
-    deletable = [getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep -E "idle|drain" | awk \'{print $2}\'').read().split() if validName.search(nodeName)]
+    deletable = [getNode(node) for node in queue.idle() if validName.search(node)]
     return [node for node in deletable if node.partition == partition and node.state == 'R' and node.timeInState() >= minRuntime]
-
-def addToSlurmConf(node):
-    data = ''
-    pattern = re.compile('(?<=={0}-{1}-\[0-)\d+(?=\])'.format(namescheme, node.partition.name))
-    with open('{}/slurm.conf'.format(slurmDir)) as f:
-        data = f.read()
-    if int(pattern.search(data).group(0)) < node.num:
-        data = pattern.sub(str(node.num), data)
-        with open('{}/slurm.conf'.format(slurmDir), 'w') as f:
-            f.write(data)
-        restartSlurmd(node)
-
-def restartSlurmctld():
-    log('WARNING: Restarting slurmctld')
-    subprocess.Popen(['systemctl', 'restart', 'slurmctld']).wait()
-    time.sleep(5)
-    for node in getNodesInState('R'):
-        subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
-        subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain'])
-
-def restartSlurmd(node):
-    pssh.run(user, user, node.name, 'sudo systemctl restart slurmd.service')
 
 def create(numToCreate, partition):
     existingDisks = {nodeName for nodeName in cloud.getDisks() if validName.search(nodeName)}
@@ -133,7 +116,7 @@ def create(numToCreate, partition):
                 break
         node.setState('C')
         node.errors = 0
-        subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Creating"'])
+        queue.nodeChangedState(node)
         log('Creating {}'.format(node.name))
         cloud.create(node)
         numToCreate -= 1
@@ -141,7 +124,7 @@ def create(numToCreate, partition):
 def deleteNode(node):
     node.setState('D')
     log('Deleting {}'.format(node.name))
-    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
+    queue.nodeChangedState(node)
     cloud.delete(node)
     #subprocess.Popen('while true; do if [ -n "`sinfo -h -N -o "%N %t" | grep "{0} " | awk \'{{print $2}}\' | grep drain`" ]; then echo Y | gcloud compute instances delete {0}; break; fi; sleep 10; done'.format(node.name), shell=True)
 
@@ -150,7 +133,7 @@ def mainLoop():
         if not isCloud:
             synchosts.addAll()
         # Start with some book keeping
-        slurmRunning = {getNode(nodeName) for nodeName in os.popen('sinfo -h -N -r -o %N').read().split() if validName.search(nodeName)} - {None}
+        queueRunning = {getNode(nodeName) for nodeName in queue.running() if validName.search(nodeName)} - {None}
         cloudRunning = {getNode(nodeName) for nodeName in nodesup.responds(user, validName) if validName.search(nodeName)} - {None}
         cloudAll = {getNode(nodeName) for nodeName in nodesup.all(False) if validName.search(nodeName)} - {None}
         
@@ -164,8 +147,8 @@ def mainLoop():
                 log('Node {} came up'.format(node.name))
         if len(cameUp) > 0:
             for node in cameUp:
-                addToSlurmConf(node)
-            restartSlurmctld()
+                queue.nodeChangedState(node)
+            queue.configChanged()
             continue
         
         # Nodes that were deleting and now are gone:
@@ -173,11 +156,11 @@ def mainLoop():
         for node in getNodesInState('D') - cloudAll:
             nodesWentDown = True
             node.setState('')
-            subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Deleted"'])
+            queue.nodeChangedState(node)
             log('Node {} went down'.format(node.name))
         if nodesWentDown:
-            # There's a chance they'll come up later with different IPs. Restart slurmctld to avoid errors.
-            restartSlurmctld()
+            # There's a chance they'll come up later with different IPs.
+            queue.configChanged()
             continue
         
         # Error conditions:
@@ -187,29 +170,30 @@ def mainLoop():
             deleteNode(node)
         
         # We think they're running, but slurm doesn't:
-        for node in getNodesInState('R') - slurmRunning:
+        for node in getNodesInState('R') - queueRunning:
             if node.timeInState() > 30:
                 log('ERROR: Node {} is unresponsive!'.format(node.name))
                 node.errors += 1
                 if node.errors < 5:
                     # Spam a bunch of stuff to try to bring it back online
-                    addToSlurmConf(node)
                     initnode.init(user, node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
-                    restartSlurmd(node)
-                    restartSlurmctld()
+                    queue.restart(True, node=node)
+                    time.sleep(5)
+                    for node in getNodesInState('R'):
+                        queue.restart(False, node=node)
                 else:
                     # Something is very wrong. Kill it.
                     node.setState('D')
                     log('Deleting {}'.format(node.name))
-                    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="error"'])
+                    queue.nodeChangedState(node)
                     cloud.delete(node)
 
         # Nodes are running but aren't registered:
         for node in cloudRunning - getNodesInState('R') - getNodesInState('D'):
             log('ERROR: Encountered unregistered node {}!'.format(node.name))
             node.setState('R')
-            if not node in slurmRunning:
-                subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
+            if not node in queueRunning:
+                queue.nodeChangedState(node)
 
         # Nodes that are taking way too long to boot:
         for node in getNodesInState('C'):
@@ -219,7 +203,7 @@ def mainLoop():
         # Book keeping for jobs. Modify existing structure rather than replacing because jobs keep track of wait time.
         # jobs = {partition : [job, ...], ...}
         # qJobs = [[jobNum, partition], ...]
-        qJobs = [[job.split()[0], getPartition(job.split()[1])] for job in os.popen('squeue -h -t pd -o "%A %P"').read().strip().split('\n') if len(job.split()) == 2]
+        qJobs = [[job[0], getPartition(job[1])] for job in queue.queuedJobs()]
         # Delete dequeued jobs
         for partition in jobs:
             for job in jobs[partition]:
@@ -279,7 +263,7 @@ def main():
 
     Thread(target = startServer).start()
 
-    if os.popen('hostname -s').read().strip() == namescheme or not isCloud:
+    if isHeadnode:
         # This is the head node
         log('Starting clic as a head node')
         # Initialize slurm.conf
@@ -316,11 +300,8 @@ def main():
         copyid.copy(True, user, user)
         copyid.send()
 
-        log('Starting slurmctld.service')
-        subprocess.Popen(['systemctl', 'restart', 'slurmctld.service']).wait()
+        queue.restart(True)
         mainLoop()
     else:
         # This is a compute node
         log('Starting clic as a compute node')
-        log('Starting slurmd.service')
-        subprocess.Popen(['systemctl', 'restart', 'slurmd.service']).wait()

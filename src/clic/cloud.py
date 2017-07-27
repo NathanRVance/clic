@@ -2,16 +2,9 @@
 from clic.nodes import Node
 from clic.nodes import Partition
 import time
-import configparser
 
 def getCloud():
-    config = configparser.ConfigParser()
-    config.read('/etc/clic/clic.conf')
-    settings = config['Cloud']
-    project = settings['project']
-    zone = settings['zone']
-    image = settings['image']
-    return gcloud(project, zone, image)
+    return gcloud()
 
 class abstract_cloud:
     def __init__(self):
@@ -40,10 +33,14 @@ class abstract_cloud:
 
 class gcloud(abstract_cloud):
     # Docs: https://developers.google.com/resources/api-libraries/documentation/compute/v1/python/latest/
-    def __init__(self, project, zone, image):
-        self.project = project
-        self.zone = zone
-        self.image = image
+    def __init__(self):
+        import configparser
+        config = configparser.ConfigParser()
+        config.read('/etc/clic/clic.conf')
+        settings = config['Cloud']
+        self.project = settings['project']
+        self.zone = settings['zone']
+        self.image = settings['image']
         import googleapiclient.discovery
         # Must first do sudo gcloud auth application-default login
         self.api = googleapiclient.discovery.build('compute', 'v1')
