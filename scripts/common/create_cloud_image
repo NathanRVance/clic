@@ -30,13 +30,13 @@ if [ "`hostname`" == "$head" ]; then
 	clic-ssh $user@$namescheme --command "cat ~/.ssh/id_rsa.pub" | sudo tee -a /home/$user/.ssh/authorized_keys #>> $CLIC_ROOT/clic.log 2>&1
 
 	# Test node remote mounting
-	sudo clic-initnode $user@$namescheme
-	clic-ssh $user@$namescheme --command "touch foo"
-	if [ ! -e ~/foo ]; then
-		echo "Failed to create file remotely!"
-		exit 1
-	fi
-	rm -f ~/foo
+	#sudo clic-initnode $user@$namescheme
+	#clic-ssh $user@$namescheme --command "touch foo"
+	#if [ ! -e ~/foo ]; then
+	#	echo "Failed to create file remotely!"
+	#	exit 1
+	#fi
+	#rm -f ~/foo
 fi
 
 # Make an image

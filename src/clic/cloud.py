@@ -107,6 +107,19 @@ class gcloud(abstract_cloud):
         image_response = self.api.images().getFromFamily(project=self.project, family=self.image).execute()
         source_disk_image = image_response['selfLink']
         machine_type = 'zones/{0}/machineTypes/n1-{1}-{2}'.format(self.zone, node.partition.mem, node.partition.cpus)
+        from pathlib import Path
+        from pwd import getpwnam
+        cmds = []
+        for path in Path('/home').iterdir():
+            if path.is_dir():
+                localUser = path.parts[-1]
+                try:
+                    uid = getpwnam(localUser).pw_uid
+                    cmds.append('sudo usermod -o -u {0} {1}'.format(uid, localuser))
+                    gid = getpwnam(localUser).pw_gid
+                    cmds.append('sudo groupmod -o -g {0} {1}'.format(gid, localuser))
+                except KeyError:
+                    continue
         config = {'name': node.name, 'machineType': machine_type,
             'disks': [
                 {
@@ -117,6 +130,14 @@ class gcloud(abstract_cloud):
                     }
                 }
             ],
+            'metadata': {
+                'items': [
+                    {
+                        'key': 'startup-script',
+                        'value': '#! /bin/bash\n{}'.format('\n'.join(cmds))
+                    }
+                ]
+            },
             # Specify a network interface with NAT to access the public
             # internet.
             'networkInterfaces': [{
