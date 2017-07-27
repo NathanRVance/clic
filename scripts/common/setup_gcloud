@@ -11,7 +11,7 @@ if ! $cloud; then
 	sudo chown `whoami`:`whoami` /home/`whoami`/.config/gcloud/application_default_credentials.json
 
 	echo "Logging in as user"
-	gcloud init
+	sudo su - -c "gcloud init"
 
 	echo "Allowing tcp port 6818 for cloud instances"
 	sudo gcloud beta compute firewall-rules create "slurmd" --allow tcp:6818 --direction "INGRESS" --priority "1000" --network "default" --source-ranges "0.0.0.0/0" >> $CLIC_ROOT/clic.log 2>&1
