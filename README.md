@@ -25,15 +25,15 @@ There are two ways of installing CLIC. One is to have both the head node and the
       `./install --head NAME`  
 
     * Hybrid: execute the `install` script on the physical headnode:  
-      `./install --compute NAME --head HOSTNAME`  
-      where NAME is the name of the GCE instance (not necessarily the headnode), and HOSTNAME is the name of the headnode.  
+      `./install --head HOSTNAME --comptue NAME`  
+      where HOSTNAME is the name of the headnode, and NAME is the name of the GCE instance.
 
 3. Use sbatch to submit jobs. It takes about 2 minutes for CLIC to create cloud instances to handle jobs.
 
 ## Configuration
 ### clic.conf
 
-The main configuration file is /etc/clic/clic.conf. Normally, the only part of this file that must be edited is the [Nodes] section, which describes the charictaristics of cloud nodes created by CLIC. There are 3 points of configuration for cloud nodes:
+The main configuration file is /etc/clic/clic.conf. Normally, the only part of this file that must be edited is the [Nodes] section, which describes the charictaristics of cloud nodes created by CLIC. There are three points of configuration for cloud nodes:
   * cpus
   * disksize (GB)
   * memory (standard, highmem, highcpu)
