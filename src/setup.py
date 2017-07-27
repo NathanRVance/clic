@@ -27,6 +27,7 @@ setup(
                 'clic-ssh = clic.pssh:main',
                 'clic-synchosts = clic.synchosts:main',
                 'clic-web = clic.web:launch',
+                'clic-cloud = clic.cloud:main',
                 ]
             }
         )

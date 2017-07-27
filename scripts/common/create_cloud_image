@@ -3,10 +3,10 @@
 opts="-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=error"
 # One way or another, install git
 ssh $opts $user@$namescheme "sudo yum -y install git || sudo apt -y install git" >> $CLIC_ROOT/clic.log 2>&1
-# Install slurm
-echo "Installing slurm to $namescheme"
+# Install clic
+echo "Installing clic to $namescheme"
 echo "############ START REMOTE INSTALLATION ############"
-ssh $opts $user@$namescheme "rm -rf clic; git clone https://github.com/nathanrvance/clic; ./clic/install --cloud -s"
+ssh $opts $user@$namescheme "rm -rf clic; git clone https://github.com/nathanrvance/clic; ./clic/install -s --head $head --compute $compute"
 echo "############ END REMOTE INSTALLATION ############"
 # Copy over munge key
 #sudo scp $opts -i ~/.ssh/id_rsa /etc/munge/munge.key $user@$namescheme:.

@@ -4,20 +4,23 @@ export CLIC_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 usage() {
         echo "Usage:"
-	echo "-n --namescheme <name>   use <name> as the base name for cloud instances"
-	echo "-u --user <name>         set up user account <name> on cloud computers for use with clic"
-	echo "-c --cloud               installing to a cloud computer"
+	echo "Run this script to install CLIC to a cloud computer (pure cloud) or to a physical machine and a cloud computer (hybrid). If performing a pure cloud installation, execute this script on a computer other than the cloud computer. If performing a hybrid installation, execute this script on the physical head node."
+	echo "--head <name>            use computer at <name> as the head node.
+	                                   Default: localhost"
+	echo "--compute <name>         use computer at <name> (not localhost) as the compute node.
+	                                   Default: same value as <name> for head."
 	echo "-s                       scripted, don't ask for confirmation"
 	echo "--skip_slurm             don't install slurm on this machine"
-	echo "-h --help                print this help message"
+	echo "-h --help                print this help message and exit"
 }
 
-export user=`whoami`
+export head="localhost"
+export compute="localhost"
 export namescheme=`hostname`
-export cloud=false
 export script=false
 export skip_slurm=false
-ARGS=`getopt -n clic-install -o hscn:u: --long help,cloud,skip_slurm,namescheme:,user: -- "$@"`
+
+ARGS=`getopt -n clic-install -o hs --long help,skip_slurm,head:,compute: -- "$@"`
 if [ $? != 0 ] ; then
         usage
         exit 1
@@ -33,16 +36,12 @@ while true; do
 			export script=true;
 			shift
 			;;
-                -c | --cloud)
-                        export cloud=true
-                        shift
-                        ;;
-                -n | --namescheme)
-                        export namescheme="$2"
-                        shift 2
-                        ;;
-                -u | --user)
-                        export user=$2
+		--head)
+			export head="$2"
+			shift 2
+			;;
+                --compute)
+                        export compute="$2"
                         shift 2
                         ;;
 		--skip_slurm)
@@ -59,20 +58,17 @@ while true; do
         esac
 done
 
-if [ "`hostname`" == "$namescheme" ] && [ -n "`curl -s 'http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip' -H 'X-Google-Metadata-Request: True'`" ]; then
-	# A bit of a hack, but this api request only returns a non-empty string if run from within the cloud
-	cloud=true
+if [ "$compute" == "localhost" ]; then
+	export compute="$head"
 fi
 
-if ! $script; then
-	echo -n "Installing clic using "
-	if $cloud; then
-		echo -n "this cloud instance ($namescheme) as the basis for both the head and compute nodes."
-	else
-		echo -n "the google cloud instance named $namescheme as the basis for all compute nodes. The instance $namescheme must be currently running and already have any desired computational software installed to it."
-	fi
-	echo " Press ENTER to continue, or CTRL-c to exit."
-	read ans
+export namescheme="$compute"
+
+if [ -n "`curl -s 'http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip' -H 'X-Google-Metadata-Request: True'`" ]; then
+	# A bit of a hack, but this api request only returns a non-empty string if run from within the cloud
+	export cloud=true
+else
+	export cloud=false
 fi
 
 if [ -n "`uname -a | grep -i Debian`" ]; then
@@ -82,22 +78,48 @@ elif [ -n "`uname -a | grep -i ubuntu`" ]; then
 elif [ -e "/etc/redhat-release" ]; then
    OS="centos"
 else
-   echo "Unidentified OS! Exiting."
-   exit
+   OS="undef"
 fi
-echo "Installing for $OS"
 
-command -v gcloud >/dev/null 2>&1 || $CLIC_ROOT/scripts/$OS/setup_gcloud
-$CLIC_ROOT/scripts/common/setup_gcloud
+if ! $script; then
+	# Only do error checking if it isn't scripted
+	if [ "$compute" == "localhost" ] || [ "$compute" == `hostname` ]; then
+		echo "Must specify a compute instance that isn't localhost or `hostname`!"
+		exit 1
+	fi
+	
+	if [ "$OS" == "undef" ]; then
+		echo "Warning: Unidentified OS! If this is a pure cloud installation, it's probably fine."
+	fi
+
+	echo -n "Installing clic using "
+	if [ "$head" == "$compute" ]; then
+		echo -n "the cloud instance $namescheme as the basis for both the head and compute nodes."
+	else
+		echo -n "the cloud instance $namescheme as the basis for all compute nodes, and this computer, $head, as the head node."
+	fi
+	echo " The instance $namescheme must be currently running and already have any desired computational software installed to it. Press ENTER to continue, or CTRL-c to exit."
+	read ans
+fi
+
+
+if ! $cloud; then
+	command -v gcloud >/dev/null 2>&1 || $CLIC_ROOT/scripts/$OS/setup_gcloud
+	$CLIC_ROOT/scripts/common/setup_gcloud
+fi
+
+$CLIC_ROOT/scripts/common/install_clic
+
+if [ "`hostname`" != "$compute" ] && [ "`hostname`" != "$head" ]; then
+	$CLIC_ROOT/scripts/common/create_cloud_image
+fi
 
 if ! $skip_slurm; then
-	$CLIC_ROOT/scripts/$OS/install_slurm
-fi	
-$CLIC_ROOT/scripts/common/install_clic
-source ~/.bashrc
-if [ "$cloud" == false ]; then
-	$CLIC_ROOT/scripts/common/create_cloud_snapshot
+	if [ "`hostname`" == "$head" ] || [ "`hostname`" == "$compute" ]; then
+		$CLIC_ROOT/scripts/$OS/install_slurm
+	fi
+fi
+
+if ! $cloud; then
 	echo "Please ensure that tcp ports 6817 (slurm) and 22 (ssh) are allowed through the firewall to this machine."
-elif [ "$script" == false ]; then
-	echo "Please stop this instance, take a snapshot of it, and name the snapshot \"$namescheme\". Once that is done, you can start this instance again and use it as the head node."
 fi

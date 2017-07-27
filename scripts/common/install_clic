@@ -5,19 +5,15 @@ echo "Using $namescheme as the base name for the cluster"
 #Install clic modules
 sudo su - -c "pip3 install $CLIC_ROOT/src --upgrade" >> $CLIC_ROOT/clic.log 2>&1
 
-#Run some of them
-source ~/.bashrc
-if ! $cloud; then
-	sudo clic-synchosts
-fi
-sudo clic-copyid --generate --append -u `whoami` $user `whoami` >> $CLIC_ROOT/clic.log 2>&1
-
 sudo mkdir /etc/clic/ >> $CLIC_ROOT/clic.log 2>&1
 echo "Populating /etc/clic/"
 
 #Create a config file
+zone=`gcloud compute instances list | grep "$namescheme" | awk '{print $2}'`
+project=`gcloud config get-value project`
+
 echo -e "\n/etc/clic/clic.conf:" >> $CLIC_ROOT/clic.log 2>&1
-cat $CLIC_ROOT/files/clic.conf | sed "s/NAMESCHEME/$namescheme/g" | sed "s/CLOUD/$cloud/g" | sed "s/USER/$user/g" | sudo tee /etc/clic/clic.conf >> $CLIC_ROOT/clic.log 2>&1
+cat $CLIC_ROOT/files/clic.conf | sed "s/NAMESCHEME/$namescheme/g" | sed "s/CLOUD/$cloud/g" | sed "s/USER/`whoami`/g" | sed "s/ZONE/$zone/g" | sed "s/PROJECT/$project/g" | sudo tee /etc/clic/clic.conf >> $CLIC_ROOT/clic.log 2>&1
 
 #Create an example init script
 echo -e "\n/etc/clic/example.sh:" >> $CLIC_ROOT/clic.log 2>&1
@@ -39,6 +35,13 @@ with command line arguments: cpus, disksize, memtype." | sudo tee /etc/clic/READ
 echo -e "\n/etc/systemd/system/clic.service:" >> $CLIC_ROOT/clic.log 2>&1
 path="`which clic`"
 cat $CLIC_ROOT/files/clic.service | sed "s&PATH&$path&g" | sudo tee /etc/systemd/system/clic.service >> $CLIC_ROOT/clic.log 2>&1
+
+#Run some stuff
+source ~/.bashrc
+if ! $cloud; then
+	sudo clic-synchosts
+fi
+sudo clic-copyid --generate --append -u `whoami` $user `whoami` >> $CLIC_ROOT/clic.log 2>&1
 
 sudo systemctl enable clic.service >> $CLIC_ROOT/clic.log 2>&1
 #sudo systemctl restart clic.service

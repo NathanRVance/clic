@@ -5,26 +5,31 @@ import re
 import time
 import rpyc
 from threading import Thread
-from clic import initnode
-from clic import nodesup
-from clic import synchosts
-from clic import pssh
+import initnode
+import nodesup
+import synchosts
+import pssh
 import configparser
 import fileinput
+from nodes import Partition
+from nodes import Node
 
 config = configparser.ConfigParser()
 config.read('/etc/clic/clic.conf')
-settings = config['Daemon']
 
 # Constants
+settings = config['Daemon']
 minRuntime = settings.getint('minRuntime')
 slurmDir = settings['slurmDir']
 user = settings['user']
 namescheme = settings['namescheme']
-snapshot = settings['snapshot']
 logfile = settings['logfile']
 isCloud = settings.getboolean('cloudHeadnode')
 validName = re.compile('^' + namescheme + '-\w+-\d+$')
+
+# Cloud settings
+import cloud as api
+cloud = api.getCloud()
 
 # Node settings
 settings = config['Nodes']
@@ -38,42 +43,12 @@ def parseInt(value):
     except:
         return 0
 
-class Partition:
-    def __init__(self, cpus, disk, mem):
-        self.cpus = int(cpus)
-        self.disk = int(disk)
-        self.mem = mem
-        if mem == 'standard':
-            self.realMem = int(float(self.cpus) * 3.75)
-        elif mem == 'highmem':
-            self.realMem = int(float(self.cpus) * 6.5)
-        elif mem == 'highcpu':
-            self.realMem = int(float(self.cpus) * .9)
-        self.name = '{0}cpu{1}disk{2}'.format(cpus, disk, mem)
-
 partitions = [Partition(cpus, disk, mem) for cpus in cpuValues for disk in diskValues for mem in memValues if not (cpus == '1' and mem == 'highmem') and not (cpus == '1' and mem == 'highcpu')]
+
+nodes = []
 
 def getPartition(name):
     return next((partition for partition in partitions if partition.name == name), None)
-
-class Node:
-    def __init__(self, partition, num):
-        self.partition = partition
-        self.num = num
-        self.name = '{0}-{1}-{2}'.format(namescheme, partition.name, num)
-        self.state = ''
-        self.timeEntered = time.time()
-        self.errors = 0
-    def __str__(self):
-        return self.name
-    def setState(self, state):
-        if self.state != state:
-            self.timeEntered = time.time()
-            self.state = state
-    def timeInState(self):
-        return time.time() - self.timeEntered
-
-nodes = []
 
 def getNode(nodeName):
     node = next((node for node in nodes if node.name == nodeName), None)
@@ -81,7 +56,7 @@ def getNode(nodeName):
         return node
     partition = getPartition(re.search('(?<=-)[^-]+(?=-\d+$)', nodeName).group(0))
     num = int(re.search('(?<=-)\d+$', nodeName).group(0))
-    node = Node(partition, num)
+    node = Node(namescheme, partition, num)
     nodes.append(node)
     return node
 
@@ -112,7 +87,7 @@ def getFreeNode(partition):
             if node.state == '':
                 return node
     # Time to make it
-    node = Node(partition, freeNum)
+    node = Node(namescheme, partition, freeNum)
     nodes.append(node)
     return node
 
@@ -143,7 +118,7 @@ def restartSlurmd(node):
     pssh.run(user, user, node.name, 'sudo systemctl restart slurmd.service')
 
 def create(numToCreate, partition):
-    existingDisks = {nodeName for nodeName in os.popen('gcloud compute disks list | tail -n+2 | awk \'{print $1}\'').read().split() if validName.search(nodeName)}
+    existingDisks = {nodeName for nodeName in cloud.getDisks() if validName.search(nodeName)}
     while numToCreate > 0:
         # Get a valid node
         while True:
@@ -153,21 +128,22 @@ def create(numToCreate, partition):
             elif node.name in existingDisks:
                 node.setState('D')
                 log('ERROR: Disk for {0} exists, but shouldn\'t! Deleting...'.format(node.name))
-                subprocess.Popen('echo Y | gcloud compute disks delete {0}'.format(node.name), shell=True)
+                cloud.deleteDisk(node.name)
             else:
                 break
         node.setState('C')
         node.errors = 0
         subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="Creating"'])
         log('Creating {}'.format(node.name))
-        subprocess.Popen('gcloud compute disks create {0} --size {3} --source-snapshot {1} && gcloud compute instances create {0} --machine-type "n1-{4}-{2}" --disk "name={0},device-name={0},mode=rw,boot=yes,auto-delete=yes" || echo "ERROR: Failed to create {0}" | tee -a {5}'.format(node.name, snapshot, partition.cpus, partition.disk, partition.mem, logfile), shell=True)
+        cloud.create(node)
         numToCreate -= 1
 
 def deleteNode(node):
-        node.setState('D')
-        log('Deleting {}'.format(node.name))
-        subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
-        subprocess.Popen('while true; do if [ -n "`sinfo -h -N -o "%N %t" | grep "{0} " | awk \'{{print $2}}\' | grep drain`" ]; then echo Y | gcloud compute instances delete {0}; break; fi; sleep 10; done'.format(node.name), shell=True)
+    node.setState('D')
+    log('Deleting {}'.format(node.name))
+    subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"'])
+    cloud.delete(node)
+    #subprocess.Popen('while true; do if [ -n "`sinfo -h -N -o "%N %t" | grep "{0} " | awk \'{{print $2}}\' | grep drain`" ]; then echo Y | gcloud compute instances delete {0}; break; fi; sleep 10; done'.format(node.name), shell=True)
 
 def mainLoop():
     while True:
@@ -226,7 +202,7 @@ def mainLoop():
                     node.setState('D')
                     log('Deleting {}'.format(node.name))
                     subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=down', 'reason="error"'])
-                    subprocess.Popen('echo Y | gcloud compute instances delete {0}'.format(node.name), shell=True)
+                    cloud.delete(node)
 
         # Nodes are running but aren't registered:
         for node in cloudRunning - getNodesInState('R') - getNodesInState('D'):
@@ -336,10 +312,6 @@ def main():
 
         log('Starting slurmctld.service')
         subprocess.Popen(['systemctl', 'restart', 'slurmctld.service']).wait()
-        if isCloud:
-            zone = os.popen('gcloud compute instances list | grep "$(hostname) " | awk \'{print $2}\'').read()
-            log('Configuring gcloud for zone {}'.format(zone))
-            subprocess.Popen(['gcloud', 'config', 'set', 'compute/zone', zone])
         mainLoop()
     else:
         # This is a compute node

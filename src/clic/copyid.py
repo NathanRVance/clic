@@ -3,22 +3,17 @@ from pathlib import Path
 import os
 import re
 
-keys = ''
+# keys = [[keyUser, keyValue], ...]
+keys = []
+
+import cloud as api
+cloud = api.getCloud()
 
 def refresh(append):
     global keys
-    keys = ''
+    keys = []
     if append:
-        current = os.popen('gcloud compute project-info describe').read()
-        match = re.search('key: sshKeys.*?kind:', current, re.DOTALL)
-        if match:
-            current = match.group(0)
-            current = '\n'.join(current.split('\n')[1:-1])
-            current = re.sub('\|-?\s*', '', current)
-            current = re.sub('\s*value:\s*', '', current)
-            current = re.sub('\n\s*', '\n', current)
-            current = re.sub('\n(?=\S*@\S*)', ' ', current)
-            keys = current + '\n'
+        keys = cloud.getSshKeys()
 
 def copy(generate, localuser, remoteuser):
     global keys
@@ -29,10 +24,9 @@ def copy(generate, localuser, remoteuser):
         os.system('su - ' + localuser + ' -c "ssh-keygen -t rsa -N \'\' -f ~/.ssh/id_rsa"')
     if key.is_file():
         with open(str(key), 'r') as keyFile:
-            newkey = remoteuser + ":" + keyFile.read()
-            if not re.search(re.escape(newkey.rstrip()), keys):
-                keys += newkey
-    
+            newkey = [remoteuser, keyFile.read()]
+            if not newkey in keys
+                keys.append(newkey)
 
 def copyAll(generate):
     users = []
@@ -42,8 +36,7 @@ def copyAll(generate):
 
 def send():
     global keys
-    keys = keys.rstrip() # Trim trailing newline
-    os.system('gcloud compute project-info add-metadata --metadata=^DOES_NOT_OCCURE^sshKeys=\'{0}\''.format(keys))
+    cloud.setSshKeys(keys)
 
 def main():
     import argparse

@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import subprocess
 import re
-from clic import pssh
+import pssh
+
+import cloud as api
+cloud = api.getCloud()
 
 def responds(user, nameRegex = None):
     if nameRegex is None:
@@ -9,13 +12,7 @@ def responds(user, nameRegex = None):
     return [node for node in all(True) if nameRegex.search(node) and pssh.canConnect(user, user, node)]
 
 def all(running):
-    gcloud = subprocess.Popen(['gcloud', 'compute', 'instances', 'list'], stdout=subprocess.PIPE)
-    result = ''.join([byte.decode('utf-8') for byte in gcloud.stdout.readlines()]).strip()
-    result = '\n'.join(result.split('\n')[1:]) # Chop off column headers
-    if running:
-        return re.findall('^\S*(?= .*RUNNING$)', result, re.MULTILINE)
-    else:
-        return re.findall('^\S*', result, re.MULTILINE)
+    return [node['name'] for node in cloud.nodesUp(running)]
 
 def main():
     import argparse
