@@ -4,13 +4,13 @@ import os
 import re
 import time
 import rpyc
+import configparser
+import fileinput
 from threading import Thread
 from clic import initnode
 from clic import nodesup
 from clic import synchosts
 from clic import pssh
-from clic import configparser
-from clic import fileinput
 from clic.nodes import Partition
 from clic.nodes import Node
 
