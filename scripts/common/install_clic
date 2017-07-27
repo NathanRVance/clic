@@ -3,6 +3,7 @@
 echo "Using $namescheme as the base name for the cluster"
 
 #Install clic modules
+sudo pip3 install --upgrade google-api-python-client
 sudo su - -c "pip3 install $CLIC_ROOT/src --upgrade" >> $CLIC_ROOT/clic.log 2>&1
 
 sudo mkdir /etc/clic/ >> $CLIC_ROOT/clic.log 2>&1

@@ -20,7 +20,7 @@ def add(host, ip):
 def addAll():
     from clic import cloud as api
     cloud = api.getCloud()
-    for node in cloud.nodesRunning(True):
+    for node in cloud.nodesUp(True):
         add(node['name'], node['ip'])
 
 def main():
