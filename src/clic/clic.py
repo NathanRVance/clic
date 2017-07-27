@@ -20,7 +20,7 @@ config.read('/etc/clic/clic.conf')
 # Constants
 settings = config['Daemon']
 minRuntime = settings.getint('minRuntime')
-slurmDir = settings['slurmDir']
+slurmDir = config['queue']['slurmDir'] #TODO: Eliminate
 user = settings['user']
 namescheme = settings['namescheme']
 logfile = settings['logfile']
