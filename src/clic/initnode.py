@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 from pwd import getpwnam
-import pssh
+from clic import pssh
 
 def init(user, host, skipsync, cpus, disk, mem):
     # Sync UIDs and GIDs

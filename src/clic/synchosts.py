@@ -18,7 +18,7 @@ def add(host, ip):
         hosts.write('{0} {1}\n'.format(ip, host))
 
 def addAll():
-    import cloud as api
+    from clic import cloud as api
     cloud = api.getCloud()
     for node in cloud.nodesRunning(True)
         add(node['name'], node['ip'])

@@ -10,7 +10,7 @@ usage() {
 	echo "--compute <name>         use computer at <name> (not localhost) as the compute node.
 	                                   Default: same value as <name> for head."
 	echo "-s                       scripted, don't ask for confirmation"
-	echo "--skip_slurm             don't install slurm on this machine"
+	echo "--skip_slurm             don't install slurm"
 	echo "-h --help                print this help message and exit"
 }
 

@@ -6,7 +6,7 @@ import re
 # keys = [[keyUser, keyValue], ...]
 keys = []
 
-import cloud as api
+from clic import cloud as api
 cloud = api.getCloud()
 
 def refresh(append):

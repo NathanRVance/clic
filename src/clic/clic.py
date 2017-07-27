@@ -5,14 +5,14 @@ import re
 import time
 import rpyc
 from threading import Thread
-import initnode
-import nodesup
-import synchosts
-import pssh
-import configparser
-import fileinput
-from nodes import Partition
-from nodes import Node
+from clic import initnode
+from clic import nodesup
+from clic import synchosts
+from clic import pssh
+from clic import configparser
+from clic import fileinput
+from clic.nodes import Partition
+from clic.nodes import Node
 
 config = configparser.ConfigParser()
 config.read('/etc/clic/clic.conf')
@@ -28,7 +28,7 @@ isCloud = settings.getboolean('cloudHeadnode')
 validName = re.compile('^' + namescheme + '-\w+-\d+$')
 
 # Cloud settings
-import cloud as api
+from clic import cloud as api
 cloud = api.getCloud()
 
 # Node settings

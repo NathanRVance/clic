@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from nodes import Node
-from nodes import Partition
+from clic.nodes import Node
+from clic.nodes import Partition
 import time
 import configparser
 

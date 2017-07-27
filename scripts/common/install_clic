@@ -37,10 +37,7 @@ path="`which clic`"
 cat $CLIC_ROOT/files/clic.service | sed "s&PATH&$path&g" | sudo tee /etc/systemd/system/clic.service >> $CLIC_ROOT/clic.log 2>&1
 
 #Run some stuff
-source ~/.bashrc
-if ! $cloud; then
-	sudo clic-synchosts
-fi
+sudo clic-synchosts
 sudo clic-copyid --generate --append -u `whoami` $user `whoami` >> $CLIC_ROOT/clic.log 2>&1
 
 sudo systemctl enable clic.service >> $CLIC_ROOT/clic.log 2>&1

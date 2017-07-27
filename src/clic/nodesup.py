@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import subprocess
 import re
-import pssh
+from clic import pssh
 
-import cloud as api
+from clic import cloud as api
 cloud = api.getCloud()
 
 def responds(user, nameRegex = None):
