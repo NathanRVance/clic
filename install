@@ -125,7 +125,7 @@ fi
 
 $CLIC_ROOT/scripts/common/install_clic
 
-if [ "`hostname`" != "$compute" ] && [ "`hostname`" != "$head" ]; then
+if [ "`hostname`" != "$compute" ]; then
 	$CLIC_ROOT/scripts/common/create_cloud_image
 fi
 
