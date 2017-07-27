@@ -109,7 +109,7 @@ class gcloud(abstract_cloud):
         machine_type = 'zones/{0}/machineTypes/n1-{1}-{2}'.format(self.zone, node.partition.mem, node.partition.cpus)
         from pathlib import Path
         from pwd import getpwnam
-        cmds = []
+        cmds = ['index=2000; for user in `ls /home`; do usermod -o -u $index $user; groupmod -o -g $index $user; let "index += 1"; done']
         for path in Path('/home').iterdir():
             if path.is_dir():
                 localUser = path.parts[-1]
