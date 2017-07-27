@@ -4,6 +4,7 @@ from clic.nodes import Partition
 import re
 import os
 import subprocess
+import time
 
 def getQueue(isHeadnode):
     return slurm(isHeadnode)
@@ -66,6 +67,10 @@ class slurm(abstract_queue):
         elif node.state == 'R':
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=up', 'reason="Up"']).wait()
             self.addToSlurmConf(node)
+            time.sleep(5)
+            subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
+            subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain'])
+
         elif node.state == 'D':
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"']).wait()
         elif node.state == '':

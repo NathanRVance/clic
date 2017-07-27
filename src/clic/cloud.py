@@ -72,7 +72,7 @@ class gcloud(abstract_cloud):
         # Create the image
         self.diskToImage(diskName)
 
-        print("Recreating instance")
+        #print("Recreating instance")
         config = {'name': instanceName, 'machineType': machineType,
             'disks': [
                 {
@@ -92,7 +92,7 @@ class gcloud(abstract_cloud):
                 ]
             }]
         }
-        self.wait(self.api.instances().insert(project=self.project, zone=self.zone, body=config).execute())
+        #self.wait(self.api.instances().insert(project=self.project, zone=self.zone, body=config).execute())
 
     def diskToImage(self, diskName):
         print("Creating image")
