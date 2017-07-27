@@ -25,7 +25,7 @@ def copy(generate, localuser, remoteuser):
     if key.is_file():
         with open(str(key), 'r') as keyFile:
             newkey = [remoteuser, keyFile.read()]
-            if not newkey in keys
+            if not newkey in keys:
                 keys.append(newkey)
 
 def copyAll(generate):
