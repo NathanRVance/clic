@@ -24,7 +24,7 @@ def copy(generate, localuser, remoteuser):
         os.system('su - ' + localuser + ' -c "ssh-keygen -t rsa -N \'\' -f ~/.ssh/id_rsa"')
     if key.is_file():
         with open(str(key), 'r') as keyFile:
-            newkey = [remoteuser, keyFile.read()]
+            newkey = [remoteuser, keyFile.read().strip()]
             if not newkey in keys:
                 keys.append(newkey)
 
