@@ -115,9 +115,9 @@ class gcloud(abstract_cloud):
                 localUser = path.parts[-1]
                 try:
                     uid = getpwnam(localUser).pw_uid
-                    cmds.append('sudo usermod -o -u {0} {1}'.format(uid, localuser))
+                    cmds.append('sudo usermod -o -u {0} {1}'.format(uid, localUser))
                     gid = getpwnam(localUser).pw_gid
-                    cmds.append('sudo groupmod -o -g {0} {1}'.format(gid, localuser))
+                    cmds.append('sudo groupmod -o -g {0} {1}'.format(gid, localUser))
                 except KeyError:
                     continue
         config = {'name': node.name, 'machineType': machine_type,
