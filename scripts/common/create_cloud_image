@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # One way or another, install git
-clic-ssh $user@$namescheme --command "sudo yum -y install git || sudo apt -y install git" #>> $CLIC_ROOT/clic.log 2>&1
+clic-ssh $user@$namescheme --command "sudo yum -y install git || sudo apt-get -y install git" >> $CLIC_ROOT/clic.log 2>&1
 # Install clic
 echo "Installing clic to $namescheme"
 echo "############ START REMOTE INSTALLATION ############"

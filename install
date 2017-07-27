@@ -109,16 +109,16 @@ if ! $cloud; then
 	$CLIC_ROOT/scripts/common/setup_gcloud
 fi
 
-$CLIC_ROOT/scripts/common/install_clic
-
-if [ "`hostname`" != "$compute" ] && [ "`hostname`" != "$head" ]; then
-	$CLIC_ROOT/scripts/common/create_cloud_image
-fi
-
 if ! $skip_slurm; then
 	if [ "`hostname`" == "$head" ] || [ "`hostname`" == "$compute" ]; then
 		$CLIC_ROOT/scripts/$OS/install_slurm
 	fi
+fi
+
+$CLIC_ROOT/scripts/common/install_clic
+
+if [ "`hostname`" != "$compute" ] && [ "`hostname`" != "$head" ]; then
+	$CLIC_ROOT/scripts/common/create_cloud_image
 fi
 
 if ! $cloud; then
