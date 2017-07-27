@@ -5,7 +5,8 @@ clic-ssh $user@$namescheme --command "sudo yum -y install git || sudo apt-get -y
 # Install clic
 echo "Installing clic to $namescheme"
 echo "############ START REMOTE INSTALLATION ############"
-clic-ssh $user@$namescheme --command "rm -rf clic; git clone https://github.com/nathanrvance/clic; ./clic/install -s --head $head --compute $compute"
+echo "Aggregating output. Usually takes a few minutes."
+clic-ssh $user@$namescheme --command "rm -rf clic; git clone https://github.com/nathanrvance/clic; ./clic/install -s --head $head --compute $compute --zone $zone"
 echo "############ END REMOTE INSTALLATION ############"
 # Copy over munge key
 #sudo scp $opts -i ~/.ssh/id_rsa /etc/munge/munge.key $user@$namescheme:.
@@ -25,14 +26,16 @@ sudo clic-copyid --append --generate #>> $CLIC_ROOT/clic.log 2>&1
 clic-ssh $user@$namescheme --command "if [ ! -e ~/.ssh/id_rsa.pub ]; then ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa; fi" #>> $CLIC_ROOT/clic.log 2>&1
 clic-ssh $user@$namescheme --command "cat ~/.ssh/id_rsa.pub" | sudo tee -a /home/$user/.ssh/authorized_keys #>> $CLIC_ROOT/clic.log 2>&1
 
-# Test node remote mounting
-sudo clic-initnode $user@$namescheme
-clic-ssh $user@$namescheme --command "touch foo"
-if [ ! -e ~/foo ]; then
-	echo "Failed to create file remotely!"
-	exit 1
+if [ "`hostname`" == "$head" ]; then
+	# Test node remote mounting
+	sudo clic-initnode $user@$namescheme
+	clic-ssh $user@$namescheme --command "touch foo"
+	if [ ! -e ~/foo ]; then
+		echo "Failed to create file remotely!"
+		exit 1
+	fi
+	rm -f ~/foo
 fi
-rm -f ~/foo
 
 # Make an image
 sudo clic-cloud --image $namescheme

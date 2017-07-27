@@ -10,7 +10,6 @@ sudo mkdir /etc/clic/ >> $CLIC_ROOT/clic.log 2>&1
 echo "Populating /etc/clic/"
 
 #Create a config file
-zone=`gcloud compute instances list | grep "$namescheme" | awk '{print $2}'`
 project=`gcloud config get-value project`
 
 echo -e "\n/etc/clic/clic.conf:" >> $CLIC_ROOT/clic.log 2>&1

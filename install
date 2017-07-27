@@ -21,7 +21,7 @@ export script=false
 export skip_slurm=false
 export user=`whoami`
 
-ARGS=`getopt -n clic-install -o hs --long help,skip_slurm,head:,compute: -- "$@"`
+ARGS=`getopt -n clic-install -o hs --long help,skip_slurm,head:,compute:,zone: -- "$@"`
 if [ $? != 0 ] ; then
         usage
         exit 1
@@ -45,6 +45,10 @@ while true; do
                         export compute="$2"
                         shift 2
                         ;;
+		--zone)
+			export zone="$2"
+			shift 2
+			;;
 		--skip_slurm)
 			export skip_slurm=true
 			shift
@@ -113,6 +117,10 @@ if ! $skip_slurm; then
 	if [ "`hostname`" == "$head" ] || [ "`hostname`" == "$compute" ]; then
 		$CLIC_ROOT/scripts/$OS/install_slurm
 	fi
+fi
+
+if [ -z "$zone" ]; then
+	export zone=`gcloud compute instances list | grep "$namescheme" | awk '{print $2}'`
 fi
 
 $CLIC_ROOT/scripts/common/install_clic
