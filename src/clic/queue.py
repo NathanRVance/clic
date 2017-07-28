@@ -6,8 +6,8 @@ import os
 import subprocess
 import time
 
-def getQueue(isHeadnode):
-    return slurm(isHeadnode)
+def getQueue(isHeadnode, partitions):
+    return slurm(isHeadnode, partitions)
 
 class abstract_queue:
     def __init__(self):
@@ -31,7 +31,7 @@ class abstract_queue:
         pass
    
 class slurm(abstract_queue):
-    def __init__(self, isHeadnode):
+    def __init__(self, isHeadnode, partitions):
         import configparser
         config = configparser.ConfigParser()
         config.read('/etc/clic/clic.conf')
@@ -39,7 +39,35 @@ class slurm(abstract_queue):
         self.namescheme = config['Daemon']['namescheme']
         self.user = config['Daemon']['user']
         self.isHeadnode = isHeadnode
+        self.partitions = partitions
         if isHeadnode:
+            # Initialize slurm.conf
+            data = ''
+            with open('{}/slurm.conf'.format(self.slurmDir)) as f:
+                data = f.read()
+            for partition in partitions:
+                if not re.search('={0}-{1}-\[0-\d+\] '.format(namescheme, partition.name), data):
+                    # RealMemory, TmpDisk in mb
+                    data += 'NodeName={0}-{1}-[0-0] CPUs={2} TmpDisk={3} RealMemory={4} State=UNKNOWN\n'.format(namescheme, partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024)
+                    data += 'PartitionName={1} Nodes={0}-{1}-[0-0] MaxTime=UNLIMITED State=UP\n'.format(namescheme, partition.name)
+            with open('{}/slurm.conf'.format(self.slurmDir), 'w') as f:
+                f.write(data)
+    
+            # Initialize job_submit.lua
+            data = []
+            with open('{}/job_submit.lua'.format(self.slurmDir)) as f:
+                data = f.readlines()
+            start = 0
+            for start in range(len(data)):
+                if re.search('START CLIC STUFF', data[start]):
+                    start += 1
+                    while not re.search('END CLIC STUFF', data[start]):
+                        del data[start]
+                    break
+            for partition in partitions:
+                data.insert(start, '\tparts["{0}"] = {{ cpus = {1}, disk = {2}, mem = {3} }}\n'.format(partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024))
+            with open('{}/job_submit.lua'.format(self.slurmDir), 'w') as f:
+                f.writelines(data)
             subprocess.Popen(['systemctl', 'restart', 'slurmctld.service']).wait()
         else:
             subprocess.Popen(['systemctl', 'restart', 'slurmd.service']).wait()

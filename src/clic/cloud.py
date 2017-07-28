@@ -156,7 +156,11 @@ class gcloud(abstract_cloud):
         return self.api.instances().delete(project=self.project, zone=self.zone, instance=name).execute()
 
     def deleteDisk(self, diskName):
-        return self.api.disks().delete(project=self.project, zone=self.zone, disk=diskName).execute()
+        from googleapiclient.errors import HttpError
+        try:
+            return self.api.disks().delete(project=self.project, zone=self.zone, disk=diskName).execute()
+        except HttpError:
+            pass # We'll get it next time
     
     def getDisks(self):
         return [disk['name'] for disk in self.api.disks().list(project=self.project, zone=self.zone).execute().get('items', [])]

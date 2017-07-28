@@ -20,7 +20,6 @@ config.read('/etc/clic/clic.conf')
 # Constants
 settings = config['Daemon']
 minRuntime = settings.getint('minRuntime')
-slurmDir = config['Queue']['slurmDir'] #TODO: Eliminate
 user = settings['user']
 namescheme = settings['namescheme']
 logfile = settings['logfile']
@@ -30,11 +29,6 @@ validName = re.compile('^' + namescheme + '-\w+-\d+$')
 # Cloud settings
 from clic import cloud as api
 cloud = api.getCloud()
-
-# Queue settings
-isHeadnode = os.popen('hostname -s').read().strip() == namescheme or not isCloud
-from clic import queue as q
-queue = q.getQueue(isHeadnode)
 
 # Node settings
 settings = config['Nodes']
@@ -49,6 +43,11 @@ def parseInt(value):
         return 0
 
 partitions = [Partition(cpus, disk, mem) for cpus in cpuValues for disk in diskValues for mem in memValues if not (cpus == '1' and mem == 'highmem') and not (cpus == '1' and mem == 'highcpu')]
+
+# Queue settings
+isHeadnode = os.popen('hostname -s').read().strip() == namescheme or not isCloud
+from clic import queue as q
+queue = q.getQueue(isHeadnode, partitions)
 
 nodes = []
 
@@ -266,34 +265,6 @@ def main():
     if isHeadnode:
         # This is the head node
         log('Starting clic as a head node')
-        # Initialize slurm.conf
-        data = ''
-        with open('{}/slurm.conf'.format(slurmDir)) as f:
-            data = f.read()
-        for partition in partitions:
-            if not re.search('={0}-{1}-\[0-\d+\] '.format(namescheme, partition.name), data):
-                # RealMemory, TmpDisk in mb
-                data += 'NodeName={0}-{1}-[0-0] CPUs={2} TmpDisk={3} RealMemory={4} State=UNKNOWN\n'.format(namescheme, partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024)
-                data += 'PartitionName={1} Nodes={0}-{1}-[0-0] MaxTime=UNLIMITED State=UP\n'.format(namescheme, partition.name)
-        with open('{}/slurm.conf'.format(slurmDir), 'w') as f:
-            f.write(data)
-
-        # Initialize job_submit.lua
-        data = []
-        with open('{}/job_submit.lua'.format(slurmDir)) as f:
-            data = f.readlines()
-        start = 0
-        for start in range(len(data)):
-            if re.search('START CLIC STUFF', data[start]):
-                start += 1
-                while not re.search('END CLIC STUFF', data[start]):
-                    del data[start]
-                break
-        for partition in partitions:
-            data.insert(start, '\tparts["{0}"] = {{ cpus = {1}, disk = {2}, mem = {3} }}\n'.format(partition.name, partition.cpus, partition.disk * 1024, partition.realMem * 1024))
-        with open('{}/job_submit.lua'.format(slurmDir), 'w') as f:
-            f.writelines(data)
-
         # Sort out ssh keys
         from clic import copyid
         copyid.refresh(True)
