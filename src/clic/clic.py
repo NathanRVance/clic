@@ -146,9 +146,9 @@ def mainLoop():
                 cameUp.append(node)
                 log('Node {} came up'.format(node.name))
         if len(cameUp) > 0:
+            queue.configChanged()
             for node in cameUp:
                 queue.nodeChangedState(node)
-            queue.configChanged()
             continue
         
         # Nodes that were deleting and now are gone:

@@ -56,6 +56,7 @@ class slurm(abstract_queue):
     def restart(self, restartSlurm, node=None):
         if restartSlurm and self.isHeadnode:
             subprocess.Popen(['systemctl', 'restart', 'slurmctld.service']).wait()
+            time.sleep(5)
         if node:
             self.restartSlurmd(node)
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
@@ -67,10 +68,7 @@ class slurm(abstract_queue):
         elif node.state == 'R':
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=up', 'reason="Up"']).wait()
             self.addToSlurmConf(node)
-            time.sleep(5)
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
-            subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain'])
-
         elif node.state == 'D':
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"']).wait()
         elif node.state == '':
@@ -86,6 +84,7 @@ class slurm(abstract_queue):
             with open('{}/slurm.conf'.format(self.slurmDir), 'w') as f:
                 f.write(data)
             self.restartSlurmd(node)
+            time.sleep(5)
 
     def restartSlurmd(self, node):
         from clic import pssh

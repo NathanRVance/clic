@@ -18,7 +18,7 @@ There are two ways of installing CLIC. One is to have both the head node and the
 
 ## Quickstart
 
-1. Create a GCE instance. The name given this instance will become the base name of the cluster. For example, if you name it NAME, then instances created by CLIC will follow the pattern NAME-PARTITION-ID, where PARTITION is the SLURM partition to which the node belongs, and ID differentiates among nodes in a partition. If you are creating a cloud head node, set the API access scope to "Allow full access to all Cloud APIs"
+1. Create a GCE instance. The name given this instance will become the base name of the cluster. For example, if you name it NAME, then instances created by CLIC will follow the pattern NAME-PARTITION-ID, where PARTITION is the SLURM partition to which the node belongs, and ID differentiates among nodes in a partition.
 
 2. Install CLIC
     * Pure Cloud: execute the `install` script on some machine other than NAME. The Google Cloud Shell works well for this purpose:  
