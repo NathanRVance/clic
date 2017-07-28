@@ -12,10 +12,10 @@ config.read('/etc/clic/clic.conf')
 user = config['Daemon']['user']
 
 def responds(user=user):
-    return [node for node in all(True) if pssh.canConnect(user, user, node.name)]
+    return {node for node in all(True) if pssh.canConnect(user, user, node.name)}
 
 def all(running):
-    return [node['node'] for node in cloud.nodesUp(running)]
+    return {node['node'] for node in cloud.nodesUp(running)}
 
 def main():
     import argparse

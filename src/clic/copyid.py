@@ -33,7 +33,7 @@ def copyAll(generate):
     users = []
     for user in Path('/home').iterdir():
         try:
-            pwd.getpwnam(user)
+            pwd.getpwnam(user.parts[-1])
         except KeyError:
             continue
         if user.is_dir():
