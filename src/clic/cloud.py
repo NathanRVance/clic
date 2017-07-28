@@ -3,6 +3,8 @@ from clic.nodes import Node
 from clic.nodes import Partition
 import time
 import logging
+logging = logging.getLogger('cloud')
+logging.setLevel(logging.WARNING)
 
 def getCloud():
     return gcloud()

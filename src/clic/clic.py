@@ -23,7 +23,10 @@ settings = config['Daemon']
 minRuntime = settings.getint('minRuntime')
 user = settings['user']
 namescheme = settings['namescheme']
-logging.basicConfig(filename=settings['logfile'], format='%(levelname)s: %(message)s', level=logging.DEBUG)
+logging.basicConfig(filename=settings['logfile'], format='%(levelname)s: %(message)s', level=logging.CRITICAL)
+logging = logging.getLogger('clic')
+logging.setLevel(logging.DEBUG)
+
 isCloud = settings.getboolean('cloudHeadnode')
 validName = re.compile('^' + namescheme + '-\w+-\d+$')
 
