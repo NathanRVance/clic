@@ -6,14 +6,12 @@ from clic import pssh
 from clic import cloud as api
 cloud = api.getCloud()
 
-def responds(user=None, nameRegex=None):
-    if user is None:
-        import configparser
-        config = configparser.ConfigParser()
-        config.read('/etc/clic/clic.conf')
-        user = config['Daemon']['user']
-    if nameRegex is None:
-        nameRegex = re.compile('.*')
+import configparser
+config = configparser.ConfigParser()
+config.read('/etc/clic/clic.conf')
+user = config['Daemon']['user']
+
+def responds(user=user, nameRegex=re.compile('.*')):
     return [node for node in all(True) if nameRegex.search(node) and pssh.canConnect(user, user, node)]
 
 def all(running):
@@ -28,6 +26,6 @@ def main():
     args = parser.parse_args()
 
     if args.responds:
-        print('\n'.join(responds(args.responds[0])))
+        print('\n'.join(responds(args.responds)))
     else:
         print('\n'.join(all(False)))

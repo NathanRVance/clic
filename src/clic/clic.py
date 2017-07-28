@@ -11,8 +11,7 @@ from clic import initnode
 from clic import nodesup
 from clic import synchosts
 from clic import pssh
-from clic.nodes import Partition
-from clic.nodes import Node
+from clic import nodes
 
 config = configparser.ConfigParser()
 config.read('/etc/clic/clic.conf')
@@ -20,7 +19,6 @@ config.read('/etc/clic/clic.conf')
 # Constants
 settings = config['Daemon']
 minRuntime = settings.getint('minRuntime')
-user = settings['user']
 namescheme = settings['namescheme']
 import logging as loggingmod
 loggingmod.basicConfig(filename=settings['logfile'], format='%(levelname)s: %(message)s', level=loggingmod.CRITICAL)
@@ -34,41 +32,10 @@ validName = re.compile('^' + namescheme + '-\w+-\d+$')
 from clic import cloud as api
 cloud = api.getCloud()
 
-# Node settings
-settings = config['Nodes']
-cpuValues = settings['cpus'].replace(' ', '').split(',')
-diskValues = settings['disksize'].replace(' ', '').split(',')
-memValues = settings['memory'].replace(' ', '').split(',')
-
-def parseInt(value):
-    try:
-        return int(float(value))
-    except:
-        return 0
-
-partitions = [Partition(cpus, disk, mem) for cpus in cpuValues for disk in diskValues for mem in memValues if not (cpus == '1' and mem == 'highmem') and not (cpus == '1' and mem == 'highcpu')]
-
 # Queue settings
 isHeadnode = os.popen('hostname -s').read().strip() == namescheme or not isCloud
 from clic import queue as q
-queue = q.getQueue(isHeadnode, partitions)
-
-nodes = []
-
-def getPartition(name):
-    return next((partition for partition in partitions if partition.name == name), None)
-
-def getNode(nodeName):
-    node = next((node for node in nodes if node.name == nodeName), None)
-    if not node == None:
-        return node
-    partition = getPartition(re.search('(?<=-)[^-]+(?=-\d+$)', nodeName).group(0))
-    if partition == None:
-        return None
-    num = int(re.search('(?<=-)\d+$', nodeName).group(0))
-    node = Node(namescheme, partition, num)
-    nodes.append(node)
-    return node
+queue = q.getQueue(isHeadnode, nodes.partitions)
 
 class Job:
     def __init__(self, num):
@@ -77,26 +44,13 @@ class Job:
     def timeWaiting(self):
         return time.time() - self.time
 
-jobs = {partition : [] for partition in partitions}
+jobs = {partition : [] for partition in nodes.partitions}
 
 def getNodesInState(state):
-    return {node for node in nodes if node.state == state}
-
-def getFreeNode(partition):
-    freeNum = 0
-    for node in nodes:
-        if node.partition == partition:
-            if node.num >= freeNum:
-                freeNum = node.num + 1
-            if node.state == '':
-                return node
-    # Time to make it
-    node = Node(namescheme, partition, freeNum)
-    nodes.append(node)
-    return node
+    return {node for node in nodes.nodes if node.state == state}
 
 def getDeletableNodes(partition):
-    deletable = {getNode(node) for node in queue.idle() if validName.search(node)} - {None}
+    deletable = {nodes.getNode(node) for node in queue.idle() if validName.search(node)} - {None}
     return [node for node in deletable if node.partition == partition and node.state == 'R' and node.timeInState() >= minRuntime]
 
 def create(numToCreate, partition):
@@ -104,7 +58,7 @@ def create(numToCreate, partition):
     while numToCreate > 0:
         # Get a valid node
         while True:
-            node = getFreeNode(partition)
+            node = nodes.getFreeNode(partition)
             if node == None:
                 return
             elif node.name in existingDisks:
@@ -132,16 +86,16 @@ def mainLoop():
         if not isCloud:
             synchosts.addAll()
         # Start with some book keeping
-        queueRunning = {getNode(nodeName) for nodeName in queue.running() if validName.search(nodeName)} - {None}
-        cloudRunning = {getNode(nodeName) for nodeName in nodesup.responds(user, validName) if validName.search(nodeName)} - {None}
-        cloudAll = {getNode(nodeName) for nodeName in nodesup.all(False) if validName.search(nodeName)} - {None}
+        queueRunning = {nodes.getNode(nodeName) for nodeName in queue.running() if validName.search(nodeName)} - {None}
+        cloudRunning = {nodes.getNode(nodeName) for nodeName in nodesup.responds(nameRegex=validName) if validName.search(nodeName)} - {None}
+        cloudAll = {nodes.getNode(nodeName) for nodeName in nodesup.all(False) if validName.search(nodeName)} - {None}
         
         # Nodes that were creating and now are running:
         cameUp = []
         for node in cloudRunning:
             if node.state == 'C':
                 node.setState('R')
-                initnode.init(user, node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
+                initnode.init(node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
                 cameUp.append(node)
                 logging.info('Node {} came up'.format(node.name))
         if len(cameUp) > 0:
@@ -176,7 +130,7 @@ def mainLoop():
                 node.errors += 1
                 if node.errors < 5:
                     # Spam a bunch of stuff to try to bring it back online
-                    initnode.init(user, node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
+                    initnode.init(node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
                     queue.restart(True, node=node)
                     time.sleep(5)
                     for node in getNodesInState('R'):
@@ -203,7 +157,7 @@ def mainLoop():
         # Book keeping for jobs. Modify existing structure rather than replacing because jobs keep track of wait time.
         # jobs = {partition : [job, ...], ...}
         # qJobs = [[jobNum, partition], ...]
-        qJobs = [[job[0], getPartition(job[1])] for job in queue.queuedJobs()]
+        qJobs = [[job[0], nodes.getPartition(job[1])] for job in queue.queuedJobs()]
         # Delete dequeued jobs
         for partition in jobs:
             for job in jobs[partition]:
@@ -246,7 +200,7 @@ class exportNodes(rpyc.Service):
     def on_disconnect(self):
         pass
     def exposed_getNodes(self):
-        return nodes
+        return nodes.nodes
 
 def startServer():
     if __name__ == "__main__":
@@ -269,7 +223,7 @@ def main():
         # Sort out ssh keys
         from clic import copyid
         copyid.refresh(True)
-        copyid.copy(True, user, user)
+        copyid.copyAll(True)
         copyid.send()
 
         queue.restart(True)

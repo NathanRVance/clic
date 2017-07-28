@@ -4,7 +4,12 @@ from pathlib import Path
 from pwd import getpwnam
 from clic import pssh
 
-def init(user, host, skipsync, cpus, disk, mem):
+import configparser
+config = configparser.ConfigParser()
+config.read('/etc/clic/clic.conf')
+user = config['Daemon']['user']
+
+def init(host, skipsync, cpus, disk, mem, user=user):
     # Sync UIDs and GIDs
     #for path in Path('/home').iterdir():
     #    if path.is_dir():
@@ -15,7 +20,7 @@ def init(user, host, skipsync, cpus, disk, mem):
     #            pssh.run(user, user, host, 'nohup sudo su - -c \'usermod -o -u {1} {0}; groupmod -o -g {2} {0}\' &> /dev/null &'.format(localUser, uid, gid))
     #        except KeyError:
     #            continue
-    
+   
     hostname = os.popen('hostname -s').read().strip()
     if not skipsync:
         import ipgetter
@@ -41,4 +46,4 @@ def main():
     parser.add_argument('userhost', metavar='USER@HOST', nargs=1, help='passwordless ssh exists both ways between USER@localhost and USER@HOST')
     args = parser.parse_args()
     [user, host] = args.userhost[0].split('@')
-    init(user, host, False, 0, 0, 0)
+    init(host, False, 0, 0, 0, user=user)
