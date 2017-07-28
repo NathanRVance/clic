@@ -114,6 +114,7 @@ class slurm(abstract_queue):
             data = pattern.sub(str(node.num), data)
             with open('{}/slurm.conf'.format(self.slurmDir), 'w') as f:
                 f.write(data)
+            self.restart(True)
             self.restartSlurmd(node)
             time.sleep(5)
 
