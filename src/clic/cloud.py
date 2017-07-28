@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-from clic.nodes import Node
-from clic.nodes import Partition
+from clic import nodes
 import time
 import logging as loggingmod
 logging = loggingmod.getLogger('cloud')
@@ -30,7 +29,7 @@ class abstract_cloud:
         # keys: [[keyUser, keyValue], ...]
         pass
     def nodesUp(self, running):
-        # Return: [{'name' : NAME, 'running' : True|False, 'ip' : IP} ...]
+        # Return: [{'node' : node, 'running' : True|False, 'ip' : IP} ...]
         pass
 
 
@@ -201,7 +200,9 @@ class gcloud(abstract_cloud):
         try:
             allNodes = []
             for item in self.api.instances().list(project=self.project, zone=self.zone).execute().get('items', []):
-                node = {'name' : item['name'], 'running' : item['status'] == 'RUNNING'}
+                node = {'node' : nodes.getNode(item['name']), 'running' : item['status'] == 'RUNNING'}
+                if node['node'] is None:
+                    continue
                 if node['running']:
                     node['ip'] = item['networkInterfaces'][0]['accessConfigs'][0]['natIP']
                 else:

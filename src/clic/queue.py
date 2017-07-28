@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-from clic.nodes import Node
-from clic.nodes import Partition
+from clic import nodes
 import re
 import os
 import subprocess
@@ -13,10 +12,10 @@ class abstract_queue:
     def __init__(self):
         pass
     def idle():
-        # Return: {nodeName, ...}
+        # Return: {node, ...}
         pass
     def running():
-        # Return: {nodeName, ...}
+        # Return: {node, ...}
         pass
     def configChanged():
         # Called whenever a node goes up or down
@@ -27,7 +26,7 @@ class abstract_queue:
     def nodeChangedState(node):
         pass
     def queuedJobs():
-        # Return: [[jobNum, partitionName], ...]
+        # Return: [[jobNum, partition], ...]
         pass
    
 class slurm(abstract_queue):
@@ -73,10 +72,10 @@ class slurm(abstract_queue):
             subprocess.Popen(['systemctl', 'restart', 'slurmd.service']).wait()
 
     def idle(self):
-        return {nodeName for nodeName in os.popen('sinfo -o "%t %n" | grep -E "idle|drain" | awk \'{print $2}\'').read().split()}
+        return {nodes.getNode(nodeName) for nodeName in os.popen('sinfo -o "%t %n" | grep -E "idle|drain" | awk \'{print $2}\'').read().split()} - {None}
 
     def running(self):
-        return {nodeName for nodeName in os.popen('sinfo -h -N -r -o %N').read().split()}
+        return {nodes.getNode(nodeName) for nodeName in os.popen('sinfo -h -N -r -o %N').read().split()} - {None}
 
     def configChanged(self):
         self.restart(True)
@@ -123,4 +122,11 @@ class slurm(abstract_queue):
         pssh.run(self.user, self.user, node.name, 'sudo systemctl restart slurmd.service')
 
     def queuedJobs(self):
-        return [job.split() for job in os.popen('squeue -h -t pd -o "%A %P"').read().strip().split('\n') if len(job.split()) == 2]
+        qJobs = []
+        for job in os.popen('squeue -h -t pd -o "%A %P"').read().strip().split('\n'):
+            parts = job.split()
+            if len(parts) == 2:
+                parts[1] = nodes.getPartition(parts[1])
+                if not parts[1] is None:
+                    qJobs.append(parts)
+        return qJobs

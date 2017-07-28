@@ -10,6 +10,8 @@ diskValues = settings['disksize'].replace(' ', '').split(',')
 memValues = settings['memory'].replace(' ', '').split(',')
 namescheme = config['Daemon']['namescheme']
 
+validName = re.compile('^' + namescheme + '-\w+-\d+$')
+
 def parseInt(value):
     try:
         return int(float(value))
@@ -54,6 +56,8 @@ class Node:
 nodes = []
 
 def getNode(nodeName):
+    if not validName.search(nodeName):
+        return None
     node = next((node for node in nodes if node.name == nodeName), None)
     if not node == None:
         return node

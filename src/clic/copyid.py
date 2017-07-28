@@ -2,6 +2,7 @@
 from pathlib import Path
 import os
 import re
+import pwd
 
 # keys = [[keyUser, keyValue], ...]
 keys = []
@@ -31,6 +32,10 @@ def copy(generate, localuser, remoteuser):
 def copyAll(generate):
     users = []
     for user in Path('/home').iterdir():
+        try:
+            pwd.getpwnam(user)
+        except KeyError:
+            continue
         if user.is_dir():
             copy(generate, user.parts[-1], user.parts[-1])
 

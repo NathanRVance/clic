@@ -26,7 +26,6 @@ logging = loggingmod.getLogger('clic')
 logging.setLevel(loggingmod.DEBUG)
 
 isCloud = settings.getboolean('cloudHeadnode')
-validName = re.compile('^' + namescheme + '-\w+-\d+$')
 
 # Cloud settings
 from clic import cloud as api
@@ -50,11 +49,11 @@ def getNodesInState(state):
     return {node for node in nodes.nodes if node.state == state}
 
 def getDeletableNodes(partition):
-    deletable = {nodes.getNode(node) for node in queue.idle() if validName.search(node)} - {None}
+    deletable = queue.idle()
     return [node for node in deletable if node.partition == partition and node.state == 'R' and node.timeInState() >= minRuntime]
 
 def create(numToCreate, partition):
-    existingDisks = {nodeName for nodeName in cloud.getDisks() if validName.search(nodeName)}
+    existingDisks = cloud.getDisks()
     while numToCreate > 0:
         # Get a valid node
         while True:
@@ -86,9 +85,9 @@ def mainLoop():
         if not isCloud:
             synchosts.addAll()
         # Start with some book keeping
-        queueRunning = {nodes.getNode(nodeName) for nodeName in queue.running() if validName.search(nodeName)} - {None}
-        cloudRunning = {nodes.getNode(nodeName) for nodeName in nodesup.responds(nameRegex=validName) if validName.search(nodeName)} - {None}
-        cloudAll = {nodes.getNode(nodeName) for nodeName in nodesup.all(False) if validName.search(nodeName)} - {None}
+        queueRunning = queue.running()
+        cloudRunning = nodesup.responds()
+        cloudAll = nodesup.all(False)
         
         # Nodes that were creating and now are running:
         cameUp = []
@@ -157,7 +156,7 @@ def mainLoop():
         # Book keeping for jobs. Modify existing structure rather than replacing because jobs keep track of wait time.
         # jobs = {partition : [job, ...], ...}
         # qJobs = [[jobNum, partition], ...]
-        qJobs = [[job[0], nodes.getPartition(job[1])] for job in queue.queuedJobs()]
+        qJobs = queue.queuedJobs()
         # Delete dequeued jobs
         for partition in jobs:
             for job in jobs[partition]:
