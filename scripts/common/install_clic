@@ -5,13 +5,16 @@ echo "Using $namescheme as the base name for the cluster"
 #Install clic modules
 echo "Installing CLIC"
 sudo pip3 install --upgrade google-api-python-client >> $CLIC_ROOT/clic.log 2>&1
-sudo su - -c "pip3 install $CLIC_ROOT/src --upgrade" >> $CLIC_ROOT/clic.log 2>&1
+sudo pip3 install $CLIC_ROOT/src --upgrade >> $CLIC_ROOT/clic.log 2>&1
 
 sudo mkdir /etc/clic/ >> $CLIC_ROOT/clic.log 2>&1
 echo "Populating /etc/clic/"
 
 #Create a config file
-project=`sudo su - -c "gcloud config get-value project"`
+project=`sudo su - -c "gcloud config get-value project"` >> $CLIC_ROOT/clic.log 2>&1
+if [ -z "$project" ]; then
+	project=`sudo su - -c "gcloud config get-value project"` >> $CLIC_ROOT/clic.log 2>&1
+fi
 
 echo -e "\n/etc/clic/clic.conf:" >> $CLIC_ROOT/clic.log 2>&1
 cat $CLIC_ROOT/files/clic.conf | sed "s/NAMESCHEME/$namescheme/g" | sed "s/CLOUD/$cloud/g" | sed "s/USER/`whoami`/g" | sed "s/ZONE/$zone/g" | sed "s/PROJECT/$project/g" | sudo tee /etc/clic/clic.conf >> $CLIC_ROOT/clic.log 2>&1
