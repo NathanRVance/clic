@@ -87,7 +87,9 @@ class slurm(abstract_queue):
             time.sleep(5)
         if node:
             self.restartSlurmd(node)
+            time.sleep(1)
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
+            time.sleep(1)
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=undrain'])
 
     def nodeChangedState(self, node):
@@ -96,6 +98,7 @@ class slurm(abstract_queue):
         elif node.state == 'R':
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=up', 'reason="Up"']).wait()
             self.addToSlurmConf(node)
+            time.sleep(1)
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=resume'])
         elif node.state == 'D':
             subprocess.Popen(['scontrol', 'update', 'nodename=' + node.name, 'state=drain', 'reason="Deleting"']).wait()
