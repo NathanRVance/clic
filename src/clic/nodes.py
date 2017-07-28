@@ -8,6 +8,7 @@ settings = config['Nodes']
 cpuValues = settings['cpus'].replace(' ', '').split(',')
 diskValues = settings['disksize'].replace(' ', '').split(',')
 memValues = settings['memory'].replace(' ', '').split(',')
+namescheme = config['Daemon']['namescheme']
 
 def parseInt(value):
     try:
