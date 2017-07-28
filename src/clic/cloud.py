@@ -2,9 +2,9 @@
 from clic.nodes import Node
 from clic.nodes import Partition
 import time
-import logging
-logging = logging.getLogger('cloud')
-logging.setLevel(logging.WARNING)
+import logging as loggingmod
+logging = loggingmod.getLogger('cloud')
+logging.setLevel(loggingmod.WARNING)
 
 def getCloud():
     return gcloud()

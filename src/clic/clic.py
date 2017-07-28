@@ -6,7 +6,6 @@ import time
 import rpyc
 import configparser
 import fileinput
-import logging
 from threading import Thread
 from clic import initnode
 from clic import nodesup
@@ -23,9 +22,10 @@ settings = config['Daemon']
 minRuntime = settings.getint('minRuntime')
 user = settings['user']
 namescheme = settings['namescheme']
-logging.basicConfig(filename=settings['logfile'], format='%(levelname)s: %(message)s', level=logging.CRITICAL)
-logging = logging.getLogger('clic')
-logging.setLevel(logging.DEBUG)
+import logging as loggingmod
+loggingmod.basicConfig(filename=settings['logfile'], format='%(levelname)s: %(message)s', level=loggingmod.CRITICAL)
+logging = loggingmod.getLogger('clic')
+logging.setLevel(loggingmod.DEBUG)
 
 isCloud = settings.getboolean('cloudHeadnode')
 validName = re.compile('^' + namescheme + '-\w+-\d+$')
