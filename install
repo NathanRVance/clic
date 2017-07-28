@@ -110,9 +110,8 @@ fi
 
 if ! $cloud; then
 	command -v gcloud >/dev/null 2>&1 || $CLIC_ROOT/scripts/$OS/setup_gcloud
+	$CLIC_ROOT/scripts/common/setup_gcloud
 fi
-
-$CLIC_ROOT/scripts/common/setup_gcloud
 
 if ! $skip_slurm; then
 	if [ "`hostname`" == "$head" ] || [ "`hostname`" == "$compute" ]; then
