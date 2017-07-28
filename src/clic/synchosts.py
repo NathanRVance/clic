@@ -21,7 +21,7 @@ def addAll():
     from clic import cloud as api
     cloud = api.getCloud()
     for node in cloud.nodesUp(True):
-        add(node['node'].name, node['ip'])
+        add(node['name'], node['ip'])
 
 def main():
     import argparse

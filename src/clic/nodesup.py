@@ -15,7 +15,7 @@ def responds(user=user):
     return {node for node in all(True) if pssh.canConnect(user, user, node.name)}
 
 def all(running):
-    return {node['node'] for node in cloud.nodesUp(running)}
+    return {node['node'] for node in cloud.nodesUp(running)} - {None}
 
 def main():
     import argparse

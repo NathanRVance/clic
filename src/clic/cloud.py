@@ -29,7 +29,7 @@ class abstract_cloud:
         # keys: [[keyUser, keyValue], ...]
         pass
     def nodesUp(self, running):
-        # Return: [{'node' : node, 'running' : True|False, 'ip' : IP} ...]
+        # Return: [{'node' : node, 'name': name, 'running' : True|False, 'ip' : IP} ...]
         pass
 
 
@@ -200,9 +200,7 @@ class gcloud(abstract_cloud):
         try:
             allNodes = []
             for item in self.api.instances().list(project=self.project, zone=self.zone).execute().get('items', []):
-                node = {'node' : nodes.getNode(item['name']), 'running' : item['status'] == 'RUNNING'}
-                if node['node'] is None:
-                    continue
+                node = {'node' : nodes.getNode(item['name']), 'name' : item['name'], 'running' : item['status'] == 'RUNNING'}
                 if node['running']:
                     node['ip'] = item['networkInterfaces'][0]['accessConfigs'][0]['natIP']
                 else:
