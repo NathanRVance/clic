@@ -170,6 +170,7 @@ def mainLoop():
         for node in getNodesInState('R') - queueRunning:
             if node.timeInState() > 30:
                 logging.error('Node {} is unresponsive!'.format(node.name))
+                queue.restart(False, node=node)
                 node.errors += 1
                 if node.errors < 5:
                     # Spam a bunch of stuff to try to bring it back online
