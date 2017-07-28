@@ -6,6 +6,7 @@ import time
 import rpyc
 import configparser
 import fileinput
+import logging
 from threading import Thread
 from clic import initnode
 from clic import nodesup
@@ -22,7 +23,7 @@ settings = config['Daemon']
 minRuntime = settings.getint('minRuntime')
 user = settings['user']
 namescheme = settings['namescheme']
-logfile = settings['logfile']
+logging.basicConfig(filename=settings['logfile'], format='%(levelname)s: %(message)s', level=logging.DEBUG)
 isCloud = settings.getboolean('cloudHeadnode')
 validName = re.compile('^' + namescheme + '-\w+-\d+$')
 
@@ -73,12 +74,6 @@ class Job:
 
 jobs = {partition : [] for partition in partitions}
 
-def log(message):
-    message = message.strip() + '\n'
-    with open(logfile, 'a') as log:
-        log.write(message)
-    print(message)
-
 def getNodesInState(state):
     return {node for node in nodes if node.state == state}
 
@@ -109,20 +104,20 @@ def create(numToCreate, partition):
                 return
             elif node.name in existingDisks:
                 node.setState('D')
-                log('ERROR: Disk for {0} exists, but shouldn\'t! Deleting...'.format(node.name))
+                logging.warning('Disk for {0} exists, but shouldn\'t! Deleting...'.format(node.name))
                 cloud.deleteDisk(node.name)
             else:
                 break
         node.setState('C')
         node.errors = 0
         queue.nodeChangedState(node)
-        log('Creating {}'.format(node.name))
+        logging.info('Creating {}'.format(node.name))
         cloud.create(node)
         numToCreate -= 1
 
 def deleteNode(node):
     node.setState('D')
-    log('Deleting {}'.format(node.name))
+    logging.info('Deleting {}'.format(node.name))
     queue.nodeChangedState(node)
     cloud.delete(node)
     #subprocess.Popen('while true; do if [ -n "`sinfo -h -N -o "%N %t" | grep "{0} " | awk \'{{print $2}}\' | grep drain`" ]; then echo Y | gcloud compute instances delete {0}; break; fi; sleep 10; done'.format(node.name), shell=True)
@@ -143,7 +138,7 @@ def mainLoop():
                 node.setState('R')
                 initnode.init(user, node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
                 cameUp.append(node)
-                log('Node {} came up'.format(node.name))
+                logging.info('Node {} came up'.format(node.name))
         if len(cameUp) > 0:
             queue.configChanged()
             for node in cameUp:
@@ -156,7 +151,7 @@ def mainLoop():
             nodesWentDown = True
             node.setState('')
             queue.nodeChangedState(node)
-            log('Node {} went down'.format(node.name))
+            logging.info('Node {} went down'.format(node.name))
         if nodesWentDown:
             # There's a chance they'll come up later with different IPs.
             queue.configChanged()
@@ -165,13 +160,13 @@ def mainLoop():
         # Error conditions:
         # We think they're up, but the cloud doesn't:
         for node in getNodesInState('R') - cloudAll:
-            log('ERROR: Node {} deleted outside of clic!'.format(node.name))
+            logging.warning('Node {} deleted outside of clic!'.format(node.name))
             deleteNode(node)
         
         # We think they're running, but slurm doesn't:
         for node in getNodesInState('R') - queueRunning:
             if node.timeInState() > 30:
-                log('ERROR: Node {} is unresponsive!'.format(node.name))
+                logging.error('Node {} is unresponsive!'.format(node.name))
                 node.errors += 1
                 if node.errors < 5:
                     # Spam a bunch of stuff to try to bring it back online
@@ -183,13 +178,13 @@ def mainLoop():
                 else:
                     # Something is very wrong. Kill it.
                     node.setState('D')
-                    log('Deleting {}'.format(node.name))
+                    logging.error('Node {} is unresponsive. Deleting...'.format(node.name))
                     queue.nodeChangedState(node)
                     cloud.delete(node)
 
         # Nodes are running but aren't registered:
         for node in cloudRunning - getNodesInState('R') - getNodesInState('D'):
-            log('ERROR: Encountered unregistered node {}!'.format(node.name))
+            logging.warning('Encountered unregistered node {}!'.format(node.name))
             node.setState('R')
             if not node in queueRunning:
                 queue.nodeChangedState(node)
@@ -197,7 +192,7 @@ def mainLoop():
         # Nodes that are taking way too long to boot:
         for node in getNodesInState('C'):
             if node.timeInState() > 200:
-                log('ERROR: Node {} hung on boot!'.format(node.name))
+                logging.error('Node {} hung on boot!'.format(node.name))
 
         # Book keeping for jobs. Modify existing structure rather than replacing because jobs keep track of wait time.
         # jobs = {partition : [job, ...], ...}
@@ -264,7 +259,7 @@ def main():
 
     if isHeadnode:
         # This is the head node
-        log('Starting clic as a head node')
+        logging.info('Starting clic as a head node')
         # Sort out ssh keys
         from clic import copyid
         copyid.refresh(True)
@@ -275,4 +270,4 @@ def main():
         mainLoop()
     else:
         # This is a compute node
-        log('Starting clic as a compute node')
+        logging.info('Starting clic as a compute node')

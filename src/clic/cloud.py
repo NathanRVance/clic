@@ -2,6 +2,7 @@
 from clic.nodes import Node
 from clic.nodes import Partition
 import time
+import logging
 
 def getCloud():
     return gcloud()
@@ -103,93 +104,112 @@ class gcloud(abstract_cloud):
             }).execute())
 
     def create(self, node):
-        # Get the latest image
-        image_response = self.api.images().getFromFamily(project=self.project, family=self.image).execute()
-        source_disk_image = image_response['selfLink']
-        machine_type = 'zones/{0}/machineTypes/n1-{1}-{2}'.format(self.zone, node.partition.mem, node.partition.cpus)
-        from pathlib import Path
-        from pwd import getpwnam
-        cmds = ['index=2000; for user in `ls /home`; do usermod -o -u $index $user; groupmod -o -g $index $user; let "index += 1"; done']
-        for path in Path('/home').iterdir():
-            if path.is_dir():
-                localUser = path.parts[-1]
-                try:
-                    uid = getpwnam(localUser).pw_uid
-                    cmds.append('sudo usermod -o -u {0} {1}'.format(uid, localUser))
-                    gid = getpwnam(localUser).pw_gid
-                    cmds.append('sudo groupmod -o -g {0} {1}'.format(gid, localUser))
-                except KeyError:
-                    continue
-        config = {'name': node.name, 'machineType': machine_type,
-            'disks': [
-                {
-                    'boot': True,
-                    'autoDelete': True,
-                    'initializeParams': {
-                        'sourceImage': source_disk_image,
-                    }
-                }
-            ],
-            'metadata': {
-                'items': [
+        try:
+            # Get the latest image
+            image_response = self.api.images().getFromFamily(project=self.project, family=self.image).execute()
+            source_disk_image = image_response['selfLink']
+            machine_type = 'zones/{0}/machineTypes/n1-{1}-{2}'.format(self.zone, node.partition.mem, node.partition.cpus)
+            from pathlib import Path
+            from pwd import getpwnam
+            cmds = ['index=2000; for user in `ls /home`; do usermod -o -u $index $user; groupmod -o -g $index $user; let "index += 1"; done']
+            for path in Path('/home').iterdir():
+                if path.is_dir():
+                    localUser = path.parts[-1]
+                    try:
+                        uid = getpwnam(localUser).pw_uid
+                        cmds.append('sudo usermod -o -u {0} {1}'.format(uid, localUser))
+                        gid = getpwnam(localUser).pw_gid
+                        cmds.append('sudo groupmod -o -g {0} {1}'.format(gid, localUser))
+                    except KeyError:
+                        continue
+            config = {'name': node.name, 'machineType': machine_type,
+                'disks': [
                     {
-                        'key': 'startup-script',
-                        'value': '#! /bin/bash\n{}'.format('\n'.join(cmds))
+                        'boot': True,
+                        'autoDelete': True,
+                        'initializeParams': {
+                            'sourceImage': source_disk_image,
+                        }
                     }
-                ]
-            },
-            # Specify a network interface with NAT to access the public
+                ],
+                'metadata': {
+                    'items': [
+                        {
+                            'key': 'startup-script',
+                            'value': '#! /bin/bash\n{}'.format('\n'.join(cmds))
+                        }
+                    ]
+                },
+                # Specify a network interface with NAT to access the public
             # internet.
-            'networkInterfaces': [{
-                'network': 'global/networks/default',
-                'accessConfigs': [
-                    {'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}
-                ]
-            }]
-        }
-        return self.api.instances().insert(project=self.project, zone=self.zone, body=config).execute()
+                'networkInterfaces': [{
+                    'network': 'global/networks/default',
+                    'accessConfigs': [
+                        {'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}
+                    ]
+                }]
+            }
+            return self.api.instances().insert(project=self.project, zone=self.zone, body=config).execute()
+        except Exception as e:
+            logging.error(traceback.format_exc())
 
     def delete(self, node):
         return self.deleteName(node.name)
 
     def deleteName(self, name):
-        return self.api.instances().delete(project=self.project, zone=self.zone, instance=name).execute()
+        try:
+            return self.api.instances().delete(project=self.project, zone=self.zone, instance=name).execute()
+        except Exception as e:
+            logging.error(traceback.format_exc())
 
     def deleteDisk(self, diskName):
         from googleapiclient.errors import HttpError
         try:
             return self.api.disks().delete(project=self.project, zone=self.zone, disk=diskName).execute()
-        except HttpError:
-            pass # We'll get it next time
+        except Exception as e:
+            logging.error(traceback.format_exc())
     
     def getDisks(self):
-        return [disk['name'] for disk in self.api.disks().list(project=self.project, zone=self.zone).execute().get('items', [])]
+        try:
+            return [disk['name'] for disk in self.api.disks().list(project=self.project, zone=self.zone).execute().get('items', [])]
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            return []
     
     def getSshKeys(self):
         keys = []
-        for key in next(value['value'] for value in self.api.projects().get(project=self.project).execute()['commonInstanceMetadata']['items'] if value['key'] == 'sshKeys').split('\n'):
-            keys.append(key.split(':', 1))
+        try:
+            for key in next(value['value'] for value in self.api.projects().get(project=self.project).execute()['commonInstanceMetadata']['items'] if value['key'] == 'sshKeys').split('\n'):
+                keys.append(key.split(':', 1))
+        except Exception as e:
+            logging.error(traceback.format_exc())
         return keys
 
     def setSshKeys(self, keys):
-        current = self.api.projects().get(project=self.project).execute()['commonInstanceMetadata']
-        formatKeys = [':'.join(key) for key in keys]
-        next(value for value in current['items'] if value['key'] == 'sshKeys')['value'] = '\n'.join(formatKeys)
-        self.wait(self.api.projects().setCommonInstanceMetadata(project=self.project, body=current).execute())
+        try:
+            current = self.api.projects().get(project=self.project).execute()['commonInstanceMetadata']
+            formatKeys = [':'.join(key) for key in keys]
+            next(value for value in current['items'] if value['key'] == 'sshKeys')['value'] = '\n'.join(formatKeys)
+            self.wait(self.api.projects().setCommonInstanceMetadata(project=self.project, body=current).execute())
+        except Exception as e:
+            logging.error(traceback.format_exc())
 
     def nodesUp(self, running):
-        allNodes = []
-        for item in self.api.instances().list(project=self.project, zone=self.zone).execute().get('items', []):
-            node = {'name' : item['name'], 'running' : item['status'] == 'RUNNING'}
-            if node['running']:
-                node['ip'] = item['networkInterfaces'][0]['accessConfigs'][0]['natIP']
+        try:
+            allNodes = []
+            for item in self.api.instances().list(project=self.project, zone=self.zone).execute().get('items', []):
+                node = {'name' : item['name'], 'running' : item['status'] == 'RUNNING'}
+                if node['running']:
+                    node['ip'] = item['networkInterfaces'][0]['accessConfigs'][0]['natIP']
+                else:
+                    node['ip'] = ''
+                allNodes.append(node)
+            if not running:
+                return allNodes
             else:
-                node['ip'] = ''
-            allNodes.append(node)
-        if not running:
-            return allNodes
-        else:
-            return [node for node in allNodes if node['running']]
+                return [node for node in allNodes if node['running']]
+        except Exception as e:
+            logging.error(traceback.format_exc())
 
 def main():
     import argparse
