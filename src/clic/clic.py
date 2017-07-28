@@ -63,6 +63,8 @@ def getNode(nodeName):
     if not node == None:
         return node
     partition = getPartition(re.search('(?<=-)[^-]+(?=-\d+$)', nodeName).group(0))
+    if partition == None:
+        return None
     num = int(re.search('(?<=-)\d+$', nodeName).group(0))
     node = Node(namescheme, partition, num)
     nodes.append(node)
