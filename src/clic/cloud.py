@@ -130,6 +130,7 @@ class gcloud(abstract_cloud):
                         'boot': True,
                         'autoDelete': True,
                         'initializeParams': {
+                            'diskSizeGb': node.partition.disk + 1,
                             'sourceImage': source_disk_image,
                         }
                     }
