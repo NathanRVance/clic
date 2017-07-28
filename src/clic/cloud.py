@@ -159,7 +159,7 @@ class gcloud(abstract_cloud):
         return self.api.disks().delete(project=self.project, zone=self.zone, disk=diskName).execute()
     
     def getDisks(self):
-        return [disk['name'] for disk in self.api.disks().list(project=self.project, zone=self.zone).execute()['items']]
+        return [disk['name'] for disk in self.api.disks().list(project=self.project, zone=self.zone).execute().get('items', [])]
     
     def getSshKeys(self):
         keys = []
@@ -175,7 +175,7 @@ class gcloud(abstract_cloud):
 
     def nodesUp(self, running):
         allNodes = []
-        for item in self.api.instances().list(project=self.project, zone=self.zone).execute()['items']:
+        for item in self.api.instances().list(project=self.project, zone=self.zone).execute().get('items', []):
             node = {'name' : item['name'], 'running' : item['status'] == 'RUNNING'}
             if node['running']:
                 node['ip'] = item['networkInterfaces'][0]['accessConfigs'][0]['natIP']
