@@ -96,7 +96,7 @@ def getFreeNode(partition):
     return node
 
 def getDeletableNodes(partition):
-    deletable = [getNode(node) for node in queue.idle() if validName.search(node)]
+    deletable = {getNode(node) for node in queue.idle() if validName.search(node)} - {None}
     return [node for node in deletable if node.partition == partition and node.state == 'R' and node.timeInState() >= minRuntime]
 
 def create(numToCreate, partition):
