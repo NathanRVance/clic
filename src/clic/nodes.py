@@ -31,6 +31,19 @@ class Partition:
             self.realMem = int(float(self.cpus) * .9)
         self.name = '{0}cpu{1}disk{2}'.format(cpus, disk, mem)
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.name == other.name
+        return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, self.__class__):
+            return not self.__eq__(other)
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self.name)
+
 partitions = [Partition(cpus, disk, mem) for cpus in cpuValues for disk in diskValues for mem in memValues if not (cpus == '1' and mem == 'highmem') and not (cpus == '1' and mem == 'highcpu')]
 
 def getPartition(name):
@@ -52,6 +65,20 @@ class Node:
             self.state = state
     def timeInState(self):
         return time.time() - self.timeEntered
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.name == other.name
+        return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, self.__class__):
+            return not self.__eq__(other)
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self.name)
+
 
 nodes = []
 
