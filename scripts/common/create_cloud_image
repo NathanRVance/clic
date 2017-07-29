@@ -37,7 +37,7 @@ if [ "`hostname`" == "$head" ]; then
 	#	exit 1
 	#fi
 	#rm -f ~/foo
+	sudo clic-cloud --image $namescheme
+else
+	sudo clic-cloud --image $namescheme --recreate
 fi
-
-# Make an image
-sudo clic-cloud --image $namescheme

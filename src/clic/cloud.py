@@ -11,7 +11,7 @@ def getCloud():
 class abstract_cloud:
     def __init__(self):
         pass
-    def makeImage(self, instanceName):
+    def makeImage(self, instanceName, recreateInstance):
         pass
     def create(self, node):
         pass
@@ -61,7 +61,7 @@ class gcloud(abstract_cloud):
                break
             time.sleep(1)
 
-    def makeImage(self, instanceName):
+    def makeImage(self, instanceName, recreateInstance=False):
         diskName = [disk for disk in self.api.instances().get(project=self.project, zone=self.zone, instance=instanceName).execute()['disks'] if disk['boot']][0]['deviceName']
         print("Setting disk autodelete to False")
         self.wait(self.api.instances().setDiskAutoDelete(project=self.project, zone=self.zone, instance=instanceName, autoDelete=False, deviceName=diskName).execute())
@@ -74,27 +74,28 @@ class gcloud(abstract_cloud):
         # Create the image
         self.diskToImage(diskName)
 
-        #print("Recreating instance")
-        config = {'name': instanceName, 'machineType': machineType,
-            'disks': [
-                {
-                    'boot': True,
-                    'autoDelete': True,
-                    'deviceName': diskName,
-                    'source': 'projects/{0}/zones/{1}/disks/{2}'.format(self.project, self.zone, diskName)
-                }
-            ],
-            "serviceAccounts": [ { "scopes": [ "https://www.googleapis.com/auth/cloud-platform" ] } ],
-            # Specify a network interface with NAT to access the public
-            # internet.
-            'networkInterfaces': [{
-                'network': 'global/networks/default',
-                'accessConfigs': [
-                    {'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}
-                ]
-            }]
-        }
-        #self.wait(self.api.instances().insert(project=self.project, zone=self.zone, body=config).execute())
+        if recreateInstance:
+            print("Recreating instance")
+            config = {'name': instanceName, 'machineType': machineType,
+                'disks': [
+                    {
+                        'boot': True,
+                        'autoDelete': True,
+                        'deviceName': diskName,
+                        'source': 'projects/{0}/zones/{1}/disks/{2}'.format(self.project, self.zone, diskName)
+                    }
+                ],
+                "serviceAccounts": [ { "scopes": [ "https://www.googleapis.com/auth/cloud-platform" ] } ],
+                # Specify a network interface with NAT to access the public
+                # internet.
+                'networkInterfaces': [{
+                    'network': 'global/networks/default',
+                    'accessConfigs': [
+                        {'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}
+                    ]
+                }]
+            }
+            self.wait(self.api.instances().insert(project=self.project, zone=self.zone, body=config).execute())
 
     def diskToImage(self, diskName):
         print("Creating image")
@@ -218,8 +219,10 @@ def main():
     parser = argparse.ArgumentParser(description='Execute cloud API commands')
     from clic import version
     parser.add_argument('-v', '--version', action='version', version=version.__version__)
-    parser.add_argument('--image', metavar='NAME', nargs=1, help='Create an image from NAME')
+    image = parser.add_argument_group()
+    image.add_argument('--image', metavar='NAME', nargs=1, help='Create an image from NAME')
+    image.add_argument('--recreate', action='store_true', help='Recreate NAME after creating an image')
     args = parser.parse_args()
 
     if args.image:
-        getCloud().makeImage(args.image[0])
+        getCloud().makeImage(args.image[0], args.recreate)
