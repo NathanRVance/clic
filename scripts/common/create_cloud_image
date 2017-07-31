@@ -39,5 +39,7 @@ if [ "`hostname`" == "$head" ]; then
 	#rm -f ~/foo
 	sudo clic-cloud --image $namescheme
 else
+	clic-ssh $user@$namescheme --copy ~/.ssh/id_rsa ~/.ssh/id_rsa
+	clic-ssh $user@$namescheme --copy ~/.ssh/id_rsa.pub ~/.ssh/id_rsa.pub
 	sudo clic-cloud --image $namescheme --recreate
 fi
