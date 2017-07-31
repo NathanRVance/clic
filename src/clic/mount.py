@@ -3,7 +3,7 @@ import os
 import time
 
 def mount(user, host):
-    sshOpts = '-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oLogLevel=error'
+    sshOpts = '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error'
     # Set up ssh tunnel
     os.popen('sudo ssh -i /home/{0}/.ssh/id_rsa {2} -fN -L 3049:localhost:2049 {0}@{1}'.format(user, host, sshOpts))
     time.sleep(2)
