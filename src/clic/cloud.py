@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from clic import nodes
 import time
+import os
 import logging as loggingmod
 logging = loggingmod.getLogger('cloud')
 logging.setLevel(loggingmod.WARNING)
@@ -31,6 +32,36 @@ class abstract_cloud:
     def nodesUp(self, running):
         # Return: [{'node' : node, 'name': name, 'running' : True|False, 'ip' : IP} ...]
         pass
+    def getStartupScript(self):
+        from pathlib import Path
+        from pwd import getpwnam
+        cmds = ['index=2000; for user in `ls /home`; do usermod -o -u $index $user; groupmod -o -g $index $user; let "index += 1"; done']
+        for path in Path('/home').iterdir():
+            if path.is_dir():
+                localUser = path.parts[-1]
+                try:
+                    uid = getpwnam(localUser).pw_uid
+                    cmds.append('usermod -o -u {0} {1}'.format(uid, localUser))
+                    gid = getpwnam(localUser).pw_gid
+                    cmds.append('groupmod -o -g {0} {1}'.format(gid, localUser))
+                except KeyError:
+                    continue
+        import configparser
+        config = configparser.ConfigParser()
+        config.read('/etc/clic/clic.conf')
+        user = config['Daemon']['user']
+        hostname = os.popen('hostname -s').read().strip()
+        import ipgetter
+        cmds.append('sudo clic-synchosts {0}:{1}'.format(hostname, ipgetter.myip()))
+        cmds.append('ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error -i /home/{0}/.ssh/id_rsa -fN -L 3049:localhost:2049 {0}@{1}'.format(user, hostname))
+        cmds.append('sudo mount -t nfs4 -o port=3049,rw localhost:/home /home')
+        cmds.append('if [ ! -d "/bind-root" ]; then sudo mkdir /bind-root; fi')
+        cmds.append('sudo mount --bind / /bind-root')
+        cmds.append('for user in `ls /home`; do sudo mount --bind /bind-root/home/$user/.ssh /home/$user/.ssh; done')
+        cmds.append('sudo mount -t nfs4 -o port=3049,ro localhost:/etc/slurm /etc/slurm')
+        cmds.append('sudo systemctl restart slurmd.service')
+        return cmds
+
 
 
 class gcloud(abstract_cloud):
@@ -111,19 +142,6 @@ class gcloud(abstract_cloud):
             image_response = self.api.images().getFromFamily(project=self.project, family=self.image).execute()
             source_disk_image = image_response['selfLink']
             machine_type = 'zones/{0}/machineTypes/n1-{1}-{2}'.format(self.zone, node.partition.mem, node.partition.cpus)
-            from pathlib import Path
-            from pwd import getpwnam
-            cmds = ['index=2000; for user in `ls /home`; do usermod -o -u $index $user; groupmod -o -g $index $user; let "index += 1"; done']
-            for path in Path('/home').iterdir():
-                if path.is_dir():
-                    localUser = path.parts[-1]
-                    try:
-                        uid = getpwnam(localUser).pw_uid
-                        cmds.append('sudo usermod -o -u {0} {1}'.format(uid, localUser))
-                        gid = getpwnam(localUser).pw_gid
-                        cmds.append('sudo groupmod -o -g {0} {1}'.format(gid, localUser))
-                    except KeyError:
-                        continue
             config = {'name': node.name, 'machineType': machine_type,
                 'disks': [
                     {
@@ -139,7 +157,7 @@ class gcloud(abstract_cloud):
                     'items': [
                         {
                             'key': 'startup-script',
-                            'value': '#! /bin/bash\n{}'.format('\n'.join(cmds))
+                            'value': '#! /bin/bash\n{}'.format('\n'.join(self.getStartupScript()))
                         }
                     ]
                 },

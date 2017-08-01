@@ -30,19 +30,13 @@ def canConnect(keyowner, user, host):
     return out[1] == ''
 
 def run(keyowner, user, host, command):
-    cmdarry = []
-    if keyowner != getpass.getuser():
-        cmdarry = ['sudo']
-    ssh = subprocess.Popen(cmdarry + ['ssh', '-i', os.path.expanduser('~' + keyowner) + '/.ssh/id_rsa'] + sshOpts + ['{0}@{1}'.format(user, host), command],
+    ssh = subprocess.Popen(['ssh', '-i', os.path.expanduser('~' + keyowner) + '/.ssh/id_rsa'] + sshOpts + ['{0}@{1}'.format(user, host), command],
             shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return [''.join([byte.decode('utf-8') for byte in ssh.stdout.readlines()]),
             ''.join([byte.decode('utf-8') for byte in ssh.stderr.readlines()])]
 
 def copy(keyowner, user, host, pathOrig, pathDest):
-    cmdarry = []
-    if keyowner != getpass.getuser():
-        cmdarry = ['sudo']
-    scp = subprocess.Popen(cmdarry + ['scp', '-i', os.path.expanduser('~' + keyowner) + '/.ssh/id_rsa'] + sshOpts + [pathOrig, '{0}@{1}:{2}'.format(user, host, pathDest)],
+    scp = subprocess.Popen(['scp', '-i', os.path.expanduser('~' + keyowner) + '/.ssh/id_rsa'] + sshOpts + [pathOrig, '{0}@{1}:{2}'.format(user, host, pathDest)],
             shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return [''.join([byte.decode('utf-8') for byte in scp.stdout.readlines()]),
             ''.join([byte.decode('utf-8') for byte in scp.stderr.readlines()])]

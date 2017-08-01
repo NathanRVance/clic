@@ -94,7 +94,7 @@ def mainLoop():
         for node in cloudRunning:
             if node.state == 'C':
                 node.setState('R')
-                initnode.init(node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
+                initnode.init(node.name, node.partition.cpus, node.partition.disk, node.partition.mem)
                 cameUp.append(node)
                 logging.info('Node {} came up'.format(node.name))
         if len(cameUp) > 0:
@@ -129,7 +129,7 @@ def mainLoop():
                 node.errors += 1
                 if node.errors < 5:
                     # Spam a bunch of stuff to try to bring it back online
-                    initnode.init(node.name, isCloud, node.partition.cpus, node.partition.disk, node.partition.mem)
+                    initnode.init(node.name, node.partition.cpus, node.partition.disk, node.partition.mem)
                     queue.restart(True, node=node)
                     time.sleep(5)
                     for node in getNodesInState('R'):
