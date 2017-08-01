@@ -51,8 +51,9 @@ class abstract_cloud:
         config.read('/etc/clic/clic.conf')
         user = config['Daemon']['user']
         hostname = os.popen('hostname -s').read().strip()
-        import ipgetter
-        cmds.append('sudo clic-synchosts {0}:{1}'.format(hostname, ipgetter.myip()))
+        if config['Daemon']getboolean('cloudHeadnode'):
+            import ipgetter
+            cmds.append('sudo clic-synchosts {0}:{1}'.format(hostname, ipgetter.myip()))
         cmds.append('ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error -i /home/{0}/.ssh/id_rsa -fN -L 3049:localhost:2049 {0}@{1}'.format(user, hostname))
         cmds.append('sudo mount -t nfs4 -o port=3049,rw localhost:/home /home')
         cmds.append('if [ ! -d "/bind-root" ]; then sudo mkdir /bind-root; fi')
