@@ -6,7 +6,7 @@ clic-ssh $user@$namescheme --command "sudo yum -y install git || sudo apt-get -y
 echo "Installing clic to $namescheme"
 echo "############ START REMOTE INSTALLATION ############"
 echo "Aggregating output. This may take a few minutes."
-clic-ssh $user@$namescheme --command "rm -rf clic; git clone https://github.com/nathanrvance/clic; ./clic/install -s --head $head --compute $compute --zone $zone"
+clic-ssh $user@$namescheme --command "rm -rf clic; git clone https://github.com/nathanrvance/clic -b testing; ./clic/install -s --head $head --compute $compute --zone $zone"
 echo "############ END REMOTE INSTALLATION ############"
 if [ "`hostname`" == "$head" ]; then
 	# Only do this stuff from the head node

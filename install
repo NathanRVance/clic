@@ -10,7 +10,7 @@ usage() {
 	echo "--compute <name>         use computer at <name> (not localhost) as the compute node.
 	                                   Default: same value as <name> for head."
 	echo "-s                       scripted, don't ask for confirmation"
-	echo "--skip_slurm             don't install slurm"
+	echo "--force-slurm            install slurm, even if it's already installed"
 	echo "-h --help                print this help message and exit"
 }
 
@@ -18,10 +18,10 @@ export head="localhost"
 export compute="localhost"
 export namescheme=`hostname`
 export script=false
-export skip_slurm=false
+export force_slurm=false
 export user=`whoami`
 
-ARGS=`getopt -n clic-install -o hs --long help,skip_slurm,head:,compute:,zone: -- "$@"`
+ARGS=`getopt -n clic-install -o hs --long help,force-slurm,head:,compute:,zone: -- "$@"`
 if [ $? != 0 ] ; then
         usage
         exit 1
@@ -49,8 +49,8 @@ while true; do
 			export zone="$2"
 			shift 2
 			;;
-		--skip_slurm)
-			export skip_slurm=true
+		--force-slurm)
+			export force_slurm=true
 			shift
 			;;
                 --)
@@ -113,10 +113,8 @@ if ! $cloud; then
 	$CLIC_ROOT/scripts/common/setup_gcloud
 fi
 
-if ! $skip_slurm; then
-	if [ "`hostname`" == "$head" ] || [ "`hostname`" == "$compute" ]; then
-		$CLIC_ROOT/scripts/$OS/install_slurm
-	fi
+if [ "`hostname`" == "$head" ] || [ "`hostname`" == "$compute" ]; then
+	$CLIC_ROOT/scripts/$OS/install_slurm
 fi
 
 if [ -z "$zone" ]; then
