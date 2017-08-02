@@ -6,6 +6,10 @@
 export SLURMUSER=982
 sudo groupadd -g $SLURMUSER slurm >> $CLIC_ROOT/clic.log 2>&1
 sudo useradd  -m -c "Slurm workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm >> $CLIC_ROOT/clic.log 2>&1
+# In case they already exist but with the wrong ids:
+sudo usermod -o -u $SLURMUSER slurm
+sudo groupmod -o -g $SLURMUSER slurm
+
 
 #echo "Configuring munge"
 #sudo dd if=/dev/urandom bs=1 count=1024 | sudo tee /etc/munge/munge.key > /dev/null
