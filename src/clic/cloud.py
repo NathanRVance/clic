@@ -54,10 +54,11 @@ class abstract_cloud:
         if not config['Daemon'].getboolean('cloudHeadnode'):
             import ipgetter
             cmds.append('sudo clic-synchosts {0}:{1}'.format(hostname, ipgetter.myip()))
+            # Idea: Port 6817 traffic is slurm compute to head, 6818 is slurm head to compute
+            cmds.append('ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error -i /home/{0}/.ssh/id_rsa -fN -L 6817:localhost:6817 {0}@{1}'.format(user, hostname))
+            cmds.append('ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error -i /home/{0}/.ssh/id_rsa -fN -R 6818:localhost:6818 {0}@{1}'.format(user, hostname))
         cmds.append('ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error -i /home/{0}/.ssh/id_rsa -fN -L 3049:localhost:2049 {0}@{1}'.format(user, hostname))
         cmds.append('sudo mount -t nfs4 -o port=3049,rw localhost:/home /home')
-        # Idea: Do the same with slurm (port 6817 traffic compute to head, 6818 head to compute) so that firewalls don't have to be updated
-        cmds.append('ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error -i /home/{0}/.ssh/id_rsa -fN -L 6817:localhost:6817 {0}@{1}'.format(user, hostname))
         cmds.append('if [ ! -d "/bind-root" ]; then sudo mkdir /bind-root; fi')
         cmds.append('sudo mount --bind / /bind-root')
         cmds.append('for user in `ls /home`; do sudo mount --bind /bind-root/home/$user/.ssh /home/$user/.ssh; done')
