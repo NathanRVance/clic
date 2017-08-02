@@ -36,7 +36,7 @@ def copyAll(generate):
             pwd.getpwnam(user.parts[-1])
         except KeyError:
             continue
-        if user.is_dir():
+        if user.is_dir() and user.parts[-1] != 'root':
             copy(generate, user.parts[-1], user.parts[-1])
 
 def send():
