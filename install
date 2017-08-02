@@ -16,7 +16,7 @@ usage() {
 
 export head="localhost"
 export compute="localhost"
-export namescheme=`hostname`
+export namescheme=`hostname -s`
 export script=false
 export force_slurm=false
 export user=`whoami`
@@ -88,8 +88,8 @@ fi
 
 if ! $script; then
 	# Only do error checking if it isn't scripted
-	if [ "$compute" == "localhost" ] || [ "$compute" == `hostname` ]; then
-		echo "Must specify a compute instance that isn't localhost or `hostname`!"
+	if [ "$compute" == "localhost" ] || [ "$compute" == `hostname -s` ]; then
+		echo "Must specify a compute instance that isn't localhost or `hostname -s`!"
 		exit 1
 	fi
 	
@@ -113,7 +113,7 @@ if ! $cloud; then
 	$CLIC_ROOT/scripts/common/setup_gcloud
 fi
 
-if [ "`hostname`" == "$head" ] || [ "`hostname`" == "$compute" ]; then
+if [ "`hostname -s`" == "$head" ] || [ "`hostname -s`" == "$compute" ]; then
 	$CLIC_ROOT/scripts/$OS/install_slurm
 fi
 
@@ -126,7 +126,7 @@ fi
 
 $CLIC_ROOT/scripts/common/install_clic
 
-if [ "`hostname`" != "$compute" ]; then
+if [ "`hostname -s`" != "$compute" ]; then
 	$CLIC_ROOT/scripts/common/create_cloud_image
 fi
 
