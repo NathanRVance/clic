@@ -129,3 +129,7 @@ $CLIC_ROOT/scripts/common/install_clic
 if [ "`hostname`" != "$compute" ]; then
 	$CLIC_ROOT/scripts/common/create_cloud_image
 fi
+
+if ! $cloud; then
+	echo "Please ensure that tcp ports 6817 (slurm) and 22 (ssh) are allowed through the firewall to this machine."
+fi
