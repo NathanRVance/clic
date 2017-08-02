@@ -4,7 +4,7 @@
 
 if ! $cloud; then
 	# Make sure gcloud is set up for the root user
-	if sudo [ ! -e /root/.config/gcloud/application_default_credentials.json ]; then
+	if sudo [ ! -e /root/.config/gcloud/application_default_credentials.json ] || [ ! -e ~/.config/gcloud/application_default_credentials.json ]; then
 		echo "Obtaining oauth2 credentials"
 		sudo su - -c "gcloud auth application-default login"
 		mkdir -p /home/`whoami`/.config/gcloud/
