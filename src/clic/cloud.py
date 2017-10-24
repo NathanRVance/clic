@@ -66,6 +66,16 @@ class abstract_cloud:
         cmds.append('sudo systemctl restart slurmd.service')
         return cmds
 
+class aws(abstract_cloud):
+    # Docs: http://boto3.readthedocs.io/en/latest/reference/services/ec2.html
+    def __init__(self):
+        # First, generate credentials for a IAM user, and place the credentials in directories as described in https://github.com/boto/boto3
+        import boto3
+        self.client = boto3.client('ec2')
+   def makeImage(self, instanceName, recreateInstance):
+       pass
+
+        
 
 
 class gcloud(abstract_cloud):
